@@ -3,6 +3,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { OBJExporter } from "three/addons/exporters/OBJExporter.js";
 import { STLExporter } from "three/addons/exporters/STLExporter.js";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
+import { buildPromptModel, classifyPrompt } from "./mesh-engine.js";
 const $=s=>document.querySelector(s), viewport=$("#viewport");
 const scene=new THREE.Scene();scene.background=new THREE.Color("#101723");scene.fog=new THREE.Fog("#101723",10,28);
 const camera=new THREE.PerspectiveCamera(42,1,.1,100);camera.position.set(5.8,4.1,8.5);
@@ -32,14 +33,45 @@ if(currentMode==="vertices"&&pts.length){const g=new THREE.BufferGeometry();g.se
 meshes().forEach(m=>{m.material.wireframe=currentMode==="wireframe";m.material.transparent=currentMode==="xray";m.material.opacity=currentMode==="xray"?.24:1;m.material.depthWrite=currentMode!=="xray";});if(selectedPart)highlight(selectedPart);}
 function highlight(part){meshes().forEach(m=>{m.material.emissive.set(m.userData.part===part?0x214d48:0x000000);m.material.emissiveIntensity=m.userData.part===part?.8:0;});}
 function updateSelection(){highlight(selectedPart);$("#selected-name").textContent=selectedPart||"Nothing selected";$("#selected-type").textContent=selectedPart?(parts.get(selectedPart)||[]).length+" meshes":"—";document.querySelectorAll(".outliner-item").forEach(b=>b.classList.toggle("active",b.dataset.part===selectedPart));}
-function buildOutliner(){const order=[["Base","▰"],["Stand","▥"],["Motor","◉"],["Blades","✳"],["Cage","◎"]];$("#outliner").innerHTML="";for(const [name,icon] of order){if(!parts.has(name))continue;const b=document.createElement("button");b.className="outliner-item";b.dataset.part=name;b.innerHTML='<span class="tree-arrow">›</span><span class="object-icon">'+icon+'</span><span class="object-name">'+name+'</span><span class="object-type">'+parts.get(name).length+'×</span>';b.addEventListener("click",()=>{selectedPart=name;updateSelection();});$("#outliner").append(b);}$("#scene-count").textContent=parts.size+" parts";}
+function buildOutliner(){const order=[["Base","▰"],["Stand","▥"],["Motor","◉"],["Blades","✳"],["Cage","◎"],["Seat","▰"],["Legs","▥"],["Backrest","▤"],["Arms","▥"],["Top","▰"],["Body","▣"],["Roof","⌂"],["Door","▯"],["Windows","▦"],["Wheels","◉"],["Cabin","▱"],["Foliage","♠"],["Stem","│"],["Head","◉"],["Torso","▣"],["Face","◉"],["Feet","▰"],["Speaker cone","◉"],["Tweeter","◉"],["Cabinet","▣"],["Cushions","▰"],["Back","▰"],["Rails","▤"],["Cap","◠"],["Rock","◆"],["Teeth","✳"],["Axle","◎"],["Handle","◔"],["Neck","▥"],["Shoulder","▱"],["Rim","◉"]];for(const name of parts.keys())if(!order.some(x=>x[0]===name))order.push([name,"◈"]);$("#outliner").innerHTML="";for(const [name,icon] of order){if(!parts.has(name))continue;const b=document.createElement("button");b.className="outliner-item";b.dataset.part=name;b.innerHTML='<span class="tree-arrow">›</span><span class="object-icon">'+icon+'</span><span class="object-name">'+name+'</span><span class="object-type">'+parts.get(name).length+'×</span>';b.addEventListener("click",()=>{selectedPart=name;updateSelection();});$("#outliner").append(b);}$("#scene-count").textContent=parts.size+" parts";}
 function updateStats(){let v=0,f=0;meshes().forEach(m=>{const p=m.geometry.getAttribute("position");v+=p.count;f+=m.geometry.index?m.geometry.index.count/3:p.count/3;});$("#mesh-vertices").textContent=Math.round(v).toLocaleString();$("#mesh-faces").textContent=Math.round(f).toLocaleString();$("#mesh-status").textContent="Procedural geometry";}
 function frameModel(){const box=new THREE.Box3().setFromObject(modelRoot),size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3()),max=Math.max(size.x,size.y,size.z);controls.target.copy(center);camera.position.copy(center).add(new THREE.Vector3(max*1.15,max*.8,max*1.6));camera.near=Math.max(.01,max/1000);camera.far=max*100;camera.updateProjectionMatrix();controls.update();}
 function setMode(mode){currentMode=mode;document.querySelectorAll("[data-mode]").forEach(b=>{const a=b.dataset.mode===mode;b.classList.toggle("active",a);b.setAttribute("aria-pressed",String(a));});rebuildOverlays();}
 function resize(){const w=Math.max(1,viewport.clientWidth),h=Math.max(1,viewport.clientHeight);camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h);renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));}new ResizeObserver(resize).observe(viewport);
 renderer.domElement.addEventListener("pointerdown",e=>{const r=renderer.domElement.getBoundingClientRect();pointer.x=(e.clientX-r.left)/r.width*2-1;pointer.y=-(e.clientY-r.top)/r.height*2+1;raycaster.setFromCamera(pointer,camera);const hits=raycaster.intersectObjects(meshes(),false);if(hits.length){selectedPart=hits[0].object.userData.part;updateSelection();}});
 function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera);}animate();
+function buildGeneric(raw){
+  clearModel();
+  const result=buildPromptModel(THREE,raw,detail);
+  modelRoot=result.group;modelRoot.name=result.name;parts.clear();
+  modelRoot.traverse(o=>{if(o.isMesh){const part=o.userData.part||"Body";if(!parts.has(part))parts.set(part,[]);parts.get(part).push(o);}});
+  scene.add(modelRoot);selectedPart=null;$("#model-title").textContent=result.name;
+  updateSelection();rebuildOverlays();updateStats();buildOutliner();frameModel();
+  $("#mesh-status").textContent=result.report.checksPassed?"Mesh checks passed · "+result.report.degenerate+" degenerate faces":"Mesh needs review";
+  const note=result.recognized?"Generated "+result.name.toLowerCase()+" from the prompt. "+result.report.meshes+" named mesh objects; "+result.report.triangles+" triangles.":"I couldn't identify that object yet, so I made a starter blockout. Try a chair, table, mug, bottle, house, tree, lamp, robot, car, sofa, speaker, crate, mushroom, rock, gear, or fan.";
+  $("#export-status").textContent=note+" Checks cover finite coordinates and zero-area triangles, not watertightness or self-intersections.";
+  window.currentModelType=result.type;window.currentModelPrompt=raw;
+}
+function applySelectedPrompt(raw){
+  if(!selectedPart)return false;
+  const p=raw.toLowerCase(),part=selectedPart.toLowerCase();
+  const pronoun=/\b(this|it|that|selected part)\b/.test(p);
+  const names=[part,part.replace(/s$/,""),part==="stand"?"support":part==="blades"?"blade":part==="body"?"body":part==="legs"?"leg":part];
+  if(!pronoun&&!names.some(n=>n&&p.includes(n)))return false;
+  const targets=parts.get(selectedPart)||[];if(!targets.length)return false;
+  let changed=false;
+  const factor=/\b(wider|broader|widen)\b/.test(p)?[1.2,1,1]:/\b(taller|higher|elongate)\b/.test(p)?[1,1.2,1]:/\b(deeper|thicker)\b/.test(p)?[1,1,1.2]:/\b(smaller|shrink)\b/.test(p)?[.85,.85,.85]:/\b(bigger|larger|enlarge)\b/.test(p)?[1.15,1.15,1.15]:null;
+  if(factor){for(const o of targets)o.scale.multiply(new THREE.Vector3(...factor));changed=true;}
+  if(/\b(move|shift|slide)\b/.test(p)){const d=.12;const axis=/\bleft\b/.test(p)?[-d,0,0]:/\bright\b/.test(p)?[d,0,0]:/\b(up|higher)\b/.test(p)?[0,d,0]:/\b(down|lower)\b/.test(p)?[0,-d,0]:/\bforward\b/.test(p)?[0,0,d]:/\b(back|backward)\b/.test(p)?[0,0,-d]:null;if(axis){for(const o of targets)o.position.add(new THREE.Vector3(...axis));changed=true;}}
+  if(/\b(reset|original size|normal size)\b/.test(p)){for(const o of targets)o.scale.set(1,1,1);changed=true;}
+  if(changed){modelRoot.updateMatrixWorld(true);updateStats();rebuildOverlays();$("#export-status").textContent="Applied prompt to selected part: "+selectedPart+". Review the change before exporting.";return true;}
+  return false;
+}
 function parsePrompt(raw){const p=raw.toLowerCase();let changed=false;
+if(applySelectedPrompt(raw)){return;}
+const requestedType=classifyPrompt(raw);
+if(requestedType!=="fan" && (requestedType!=="block" || /\b(build|make|create|generate|model)\b/.test(p))){buildGeneric(raw);return;}
+if(requestedType==="fan" && /\b(build|make|create|generate)\b/.test(p) && !/\b(wider|broader|widen|tilt|angle|lean|blades?|reset|default|start over)\b/.test(p)){window.fanBaseWide=false;window.fanTilt=0;window.fanBladeCount=3;$("#model-title").textContent="Tabletop Fan";buildFan();$("#export-status").textContent="Generated the tabletop fan sample. Select a part to refine it.";return;}
 if(/tabletop fan|desk fan|electric fan|build me a fan|make a fan|fan with/.test(p)){window.fanBaseWide=false;window.fanTilt=0;window.fanBladeCount=3;$("#model-title").textContent="Tabletop Fan";buildFan();changed=true;}
 if(/wider.{0,15}base|base.{0,18}(wider|broader)|broaden.{0,12}base/.test(p)){window.fanBaseWide=true;buildFan();$("#model-title").textContent="Tabletop Fan · Wide Base";changed=true;}
 const count=p.match(/\b(2|three|3|four|4|five|5)\s*(?:fan )?blades?\b/);if(count){window.fanBladeCount=({"2":2,"three":3,"3":3,"four":4,"4":4,"five":5,"5":5})[count[1]];buildFan();$("#model-title").textContent="Tabletop Fan · "+window.fanBladeCount+" Blades";changed=true;}
