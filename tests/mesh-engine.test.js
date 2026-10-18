@@ -103,7 +103,7 @@ test("shoe, controller, and flower use purpose-built readable geometry", () => {
   const controller = buildPromptModel(THREE, "a game controller", 1);
   const controllerMeshes = [];
   controller.group.traverse(o => { if (o.isMesh) controllerMeshes.push(o); });
-  assert.ok(controllerMeshes.some(m => m.name === "Ergonomic controller shell" && m.geometry.type === "ExtrudeGeometry"));
+  assert.ok(controllerMeshes.some(m => m.name === "Controller body" && m.geometry.type === "ExtrudeGeometry"));
   assert.equal(controllerMeshes.filter(m => /^Action button /.test(m.name)).length, 4);
   assert.ok(controllerMeshes.filter(m => /^Action button /.test(m.name)).every(m => Math.abs(m.rotation.x - Math.PI / 2) < 1e-8));
 
