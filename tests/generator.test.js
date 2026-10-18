@@ -1,4 +1,5 @@
 import test from "node:test";
+import { classifyPrompt } from "../src/mesh-engine.js";
 import assert from "node:assert/strict";
 import { PALETTES, hashSeed, createRandom, triangulate, generateArtwork, artworkToSVG } from "../src/generator.js";
 test("seed hashing and random generator are deterministic",()=>{assert.equal(hashSeed("hello"),hashSeed("hello"));assert.notEqual(hashSeed("hello"),hashSeed("world"));const a=createRandom("repeat"),b=createRandom("repeat");assert.deepEqual([a(),a(),a()],[b(),b(),b()]);});
@@ -11,3 +12,12 @@ test("different seeds change generated art",()=>{const base={style:"gradient",de
 test("generated faces have three points and palette colors",()=>{const art=generateArtwork({width:240,height:160,density:3,seed:"test"});assert.ok(art.faces.length>0);for(const face of art.faces){assert.equal(face.points.length,3);assert.ok(art.palette.includes(face.color));}});
 test("SVG export includes dimensions, polygons, and escaped seed",()=>{const svg=artworkToSVG(generateArtwork({width:240,height:160,seed:"test<&",density:3}));assert.match(svg,/width="240" height="160"/);assert.match(svg,/<polygon/);assert.match(svg,/test&lt;&amp;/);});
 test("unknown styles and palettes safely fall back",()=>{const art=generateArtwork({style:"unexpected",palette:"missing",width:120,height:80,density:3});assert.equal(art.style,"landscape");assert.deepEqual(art.palette,PALETTES.dusk);});
+
+test("prompt engine recognizes the starter fan and common prop categories",()=>{
+  assert.equal(classifyPrompt("Build me a tabletop fan with three blades"),"fan");
+  assert.equal(classifyPrompt("a dining chair with four legs"),"chair");
+  assert.equal(classifyPrompt("a little robot"),"robot");
+  assert.equal(classifyPrompt("make a compact car"),"car");
+  assert.equal(classifyPrompt("a low-poly mushroom"),"mushroom");
+  assert.equal(classifyPrompt("something I cannot identify"),"block");
+});
