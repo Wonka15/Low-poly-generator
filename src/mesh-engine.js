@@ -60,12 +60,12 @@ export function buildPromptModel(THREE, prompt, detail=1) {
     add(cyl(.44*wider,.56*wider,.12,n),"Base trim","Base",[0,.25,0]);
     add(cyl(.13,.17,1.12*taller,n),"Support column","Stand",[0,.88*taller,0]);
     const head=new THREE.Group();head.name="Fan head";head.position.set(0,1.75*taller,0);group.add(head);
-    const housing=add(cyl(.46,.46,.25,n),"Motor housing","Motor",[0,0,-.1],[Math.PI/2,0,0]);head.attach(housing);
-    const hub=add(new THREE.IcosahedronGeometry(.15,1),"Front hub","Motor",[0,0,.12]);head.attach(hub);
-    const ring=add(new THREE.TorusGeometry(.78,.035,5,n*2),"Outer safety ring","Cage",[0,0,.08]);head.attach(ring);
-    const inner=add(new THREE.TorusGeometry(.63,.018,4,n*2),"Inner safety ring","Cage",[0,0,.09]);head.attach(inner);
-    for(let i=0;i<12;i++){const a=i*Math.PI/6;const s=add(rod(.012,.76,5),"Cage spoke","Cage",[Math.sin(a)*.38,Math.cos(a)*.38,.08]);s.rotation.z=-a;head.attach(s);}
-    for(let i=0;i<blades;i++){const a=i*Math.PI*2/blades;const b=add(box(.19,.62,.045),"Blade "+(i+1),"Blades",[Math.sin(a)*.22,Math.cos(a)*.22,.15]);b.rotation.z=-a+.18;head.attach(b);}
+    const housing=add(cyl(.46,.46,.25,n),"Motor housing","Motor",[0,0,-.1],[Math.PI/2,0,0]);head.add(housing);
+    const hub=add(new THREE.IcosahedronGeometry(.15,1),"Front hub","Motor",[0,0,.12]);head.add(hub);
+    const ring=add(new THREE.TorusGeometry(.78,.035,5,n*2),"Outer safety ring","Cage",[0,0,.08]);head.add(ring);
+    const inner=add(new THREE.TorusGeometry(.63,.018,4,n*2),"Inner safety ring","Cage",[0,0,.09]);head.add(inner);
+    for(let i=0;i<12;i++){const a=i*Math.PI/6;const s=add(rod(.012,.76,5),"Cage spoke","Cage",[Math.sin(a)*.38,Math.cos(a)*.38,.08]);s.rotation.z=-a;head.add(s);}
+    for(let i=0;i<blades;i++){const a=i*Math.PI*2/blades;const b=add(box(.19,.62,.045),"Blade "+(i+1),"Blades",[Math.sin(a)*.22,Math.cos(a)*.22,.15]);b.rotation.z=-a+.18;head.add(b);}
   } else if(type==="chair" || type==="stool") {
     const h=type==="stool"?.72:.82, seatY=h;
     add(box(.95*smaller,.13,.9),"Seat","Seat",[0,seatY,0]);
@@ -130,7 +130,6 @@ export function inspectMesh(root) {
     const g=o.geometry,p=g?.getAttribute("position");if(!p)return;vertices+=p.count;
     const idx=g.index, count=idx?idx.count:p.count;triangles+=Math.floor(count/3);
     for(let i=0;i<p.count;i++)if(!Number.isFinite(p.getX(i))||!Number.isFinite(p.getY(i))||!Number.isFinite(p.getZ(i)))nonFinite++;
-    const a=new THREEVector(); // replaced below by direct scalar triangle-area check
     for(let i=0;i+2<count;i+=3){const ia=idx?idx.getX(i):i,ib=idx?idx.getX(i+1):i+1,ic=idx?idx.getX(i+2):i+2;
       const ax=p.getX(ib)-p.getX(ia),ay=p.getY(ib)-p.getY(ia),az=p.getZ(ib)-p.getZ(ia),bx=p.getX(ic)-p.getX(ia),by=p.getY(ic)-p.getY(ia),bz=p.getZ(ic)-p.getZ(ia);
       const cx=ay*bz-az*by,cy=az*bx-ax*bz,cz=ax*by-ay*bx;if(cx*cx+cy*cy+cz*cz<1e-16)degenerate++;
@@ -138,5 +137,3 @@ export function inspectMesh(root) {
   });
   return {meshes,vertices,triangles,nonFinite,degenerate,uniqueNames:names.size,checksPassed:nonFinite===0&&degenerate===0};
 }
-// Marker function avoids requiring a Three.js import in this standalone module.
-function THREEVector(){return null;}
