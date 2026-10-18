@@ -29,6 +29,17 @@
     </div>
     <button id="build-button" class="button-primary"><span>✦</span> Build 3D model <span class="button-arrow">↗</span></button>
     <div class="suggestions"><span class="mini-label">OBJECT LIBRARY · TAP TO BUILD</span><button class="suggestion" data-prompt="a lollipop">🍭 Lollipop</button><button class="suggestion" data-prompt="a compact car">🚗 Car</button><button class="suggestion" data-prompt="an F1 race car">🏎️ F1 race car</button><button class="suggestion" data-prompt="a game controller">🎮 Game controller</button><button class="suggestion" data-prompt="a flower">🌸 Flower</button><button class="suggestion" data-prompt="a flower in a vase">💐 Flower in a vase</button><button class="suggestion" data-prompt="a small house">🏠 House</button><button class="suggestion" data-prompt="a Japanese maple tree">🍁 Japanese maple tree</button><button class="suggestion" data-prompt="a low-poly frog">🐸 Frog</button><button class="suggestion" data-prompt="a sneaker with laces">👟 Sneaker</button><button class="suggestion" data-prompt="a tabletop fan with three blades">🌀 Tabletop fan</button></div>
+
+    <div class="panel-divider"></div>
+    <section class="poly-library" aria-labelledby="poly-library-title">
+      <div class="panel-heading compact"><div><span class="eyebrow">ASSET PROVIDER</span><h3 id="poly-library-title">Poly Pizza Library</h3></div><span class="library-badge">GLB</span></div>
+      <p class="muted-copy small">Search real low-poly models and load them into the viewport. Get a free API key from Poly Pizza to enable live search.</p>
+      <label for="poly-api-key" class="mini-label">POLY PIZZA API KEY</label><input id="poly-api-key" class="library-input" type="password" autocomplete="off" placeholder="Paste API key (kept in memory only)" />
+      <div class="library-actions"><button id="poly-connect" class="library-button">Enable library</button><a href="https://poly.pizza/settings/api" target="_blank" rel="noreferrer">Get API key ↗</a></div>
+      <label for="poly-search" class="mini-label">SEARCH MODELS</label><div class="library-search-row"><input id="poly-search" class="library-input" type="search" placeholder="e.g. Japanese maple tree" /><button id="poly-search-button" class="library-button" aria-label="Search Poly Pizza">Search</button></div>
+      <p id="poly-status" class="library-status" role="status" aria-live="polite">Library is not connected. Procedural fallback remains available.</p><div id="poly-results" class="poly-results" aria-live="polite"></div>
+      <p class="library-disclaimer">The API key is kept in page memory only, not saved to the repository or browser storage. For a public multi-user deployment, use a server-side proxy instead of a browser key.</p>
+    </section>
     <div class="panel-divider"></div>
     <div class="panel-heading compact"><div><span class="eyebrow">02 / REFINE</span><h3>Adjust the mesh.</h3></div></div>
     <p class="muted-copy small">Select a part in the viewport, or describe the change below.</p>
