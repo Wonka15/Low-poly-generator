@@ -209,7 +209,7 @@ export function buildPromptModel(THREE, prompt, detail=1) {
     add(box(.62,.16,1.42),"Carbon monocoque","Body",[0,.30,-.02]);
     add(box(.40,.12,.62),"Rear engine cover","Body",[0,.42,-.36]);
     add(box(.24,.10,.42),"Nose spine","Nose",[0,.36,.50]);
-    add(new THREE.ConeGeometry(.20,.68,8,1,false),"Tapered nose","Nose",[0,.32,.79],[Math.PI/2,0,0]);
+    add(new THREE.CylinderGeometry(.015,.20,.68,8,1,false),"Tapered nose","Nose",[0,.32,.79],[Math.PI/2,0,0]);
     add(box(1.36,.055,.24),"Front wing main plane","Front wing",[0,.20,.82]);
     for(const s of [-1,1]) {
       add(box(.045,.16,.20),"Front wing endplate","Front wing",[s*.64,.24,.82]);
