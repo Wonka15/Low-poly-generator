@@ -65,7 +65,7 @@ export default {
       if (prompt.length > MAX_PROMPT_LENGTH) return json({ error: "Prompt is too long. Keep it under 900 characters." }, 413, origin, env);
 
       if (rateLimited(request)) return json({ error: "Generation rate limit reached. Wait one minute before starting another model." }, 429, origin, env);
-      const upstream = await fetch(API_BASE + "/generation/text-to-model",
+      const upstream = await fetch(API_BASE + "/generation/text-to-model", {
         method: "POST",
         headers: { "Authorization": "Bearer " + env.TRIPO_API_KEY, "Content-Type": "application/json" },
         body: JSON.stringify({
