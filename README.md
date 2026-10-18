@@ -5,7 +5,8 @@ A voice-first, browser-based low-poly 3D blockout studio. Describe a simple obje
 ## Current prototype
 
 - **Microphone prompts:** browser speech recognition where supported; type-to-prompt remains available.
-- **Interactive 3D viewport:** orbit, zoom, front/side views, framing, selectable scene parts, solid, wireframe, X-ray, vertex points, ground grid, and hard-edge overlay.
+- **Interactive 3D viewport:** orbit, zoom, perspective and orthographic projection, front/side views, framing, selectable scene parts, solid, wireframe, X-ray, vertex points, ground grid, and hard-edge overlay.
+- **One-click mesh cleanup:** merges coincident vertices and removes non-finite or zero-area triangles where possible; it reports what it changed and does not claim to repair every non-manifold or misplaced-vertex issue.
 - **Procedural tabletop fan:** a clean, simple blockout with separately named base, stand, motor, blades, and cage components.
 - **Prompt refinements:** supported example commands include making the base wider, changing blade count, tilting the fan head, and resetting the model.
 - **3D exports:** OBJ (Blender and Maya), binary STL, and GLB (Blender; Maya compatibility depends on installed import support).
