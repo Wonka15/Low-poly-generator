@@ -74,15 +74,16 @@ function applySelectedPrompt(raw){
   return false;
 }
 
+// Poly Pizza adapter: keeps asset search, loading, and attribution separate from procedural geometry.
 function polyStatus(message){const el=$("#poly-status");if(el)el.textContent=message;}
 function cleanAssetQuery(raw){
   return String(raw||"").replace(/build me a low[- ]poly set up/ig,"").replace(/^(with|of|for)\s+/i,"").replace(/\b(low[- ]poly|3d model|please|make me|create me|build me|make|build|create|generate)\b/ig," ").replace(/\s+/g," ").trim();
 }
 function assetAttribution(model){
   const title=model.Title||"Untitled model", creator=model.Creator?.Username||"Unknown creator", licence=model.Licence||"License not provided";
-  if(/CC0/i.test(licence))return \`"\${title}" by \${creator} — Poly Pizza (\${licence})\`;
-  if(/CC[- ]?BY/i.test(licence))return \`"\${title}" by \${creator} (\${model.Creator?.PURL||"https://poly.pizza"}) — Poly Pizza, \${licence}\`;
-  return \`"\${title}" by \${creator} — Poly Pizza, \${licence}. Verify reuse terms before redistributing.\`;
+  if(/CC0/i.test(licence))return `"${title}" by ${creator} — Poly Pizza (${licence})`;
+  if(/CC[- ]?BY/i.test(licence))return `"${title}" by ${creator} (${model.Creator?.PURL||"https://poly.pizza"}) — Poly Pizza, ${licence}`;
+  return `"${title}" by ${creator} — Poly Pizza, ${licence}. Verify reuse terms before redistributing.`;
 }
 function renderPolyResults(models){
   const root=$("#poly-results");root.replaceChildren();
@@ -97,27 +98,29 @@ function renderPolyResults(models){
     body.append(title,meta,load);card.append(img,body);root.append(card);
   }
 }
+// Search through Poly Pizza’s documented API; callers retain the procedural fallback when no asset loads.
 async function searchPolyPizza(query,{autoLoad=false}={}){
   const q=cleanAssetQuery(query||$("#poly-search").value);
   if(!polyPizzaKey){polyStatus("Add your Poly Pizza API key to enable live asset search. Using procedural models for now.");return false;}
   if(!q){polyStatus("Enter an object to search for.");return false;}
-  const serial=++polyPizzaSearchSerial;$("#poly-search").value=q;polyStatus(\`Searching Poly Pizza for “\${q}”…\`);
+  const serial=++polyPizzaSearchSerial;$("#poly-search").value=q;polyStatus(`Searching Poly Pizza for “${q}”…`);
   try{
     const url="https://api.poly.pizza/v1/search/"+encodeURIComponent(q)+"?limit=8&format=glb&tricount=0-15000";
     const response=await fetch(url,{headers:{"X-Auth-Token":polyPizzaKey,"Accept":"application/json"}});
-    if(!response.ok)throw new Error(response.status===401?"API key was rejected. Check the key and try again.":response.status===429?"Rate limit reached. Wait a moment before searching again.":\`Poly Pizza API returned HTTP \${response.status}.\`);
+    if(!response.ok)throw new Error(response.status===401?"API key was rejected. Check the key and try again.":response.status===429?"Rate limit reached. Wait a moment before searching again.":`Poly Pizza API returned HTTP ${response.status}.`);
     const data=await response.json(),models=Array.isArray(data.results)?data.results:[];
     if(serial!==polyPizzaSearchSerial)return false;
     renderPolyResults(models);
     if(!models.length){polyStatus("No matching models found. Falling back to the procedural generator.");return false;}
-    polyStatus(\`Found \${models.length} model(s). Choose one to load it.\`);
+    polyStatus(`Found ${models.length} model(s). Choose one to load it.`);
     if(autoLoad)return await loadPolyPizzaModel(models[0]);
     return true;
   }catch(error){
-    if(serial===polyPizzaSearchSerial)polyStatus(\`Poly Pizza unavailable: \${error.message} Procedural fallback is still available.\`);
+    if(serial===polyPizzaSearchSerial)polyStatus(`Poly Pizza unavailable: ${error.message} Procedural fallback is still available.`);
     return false;
   }
 }
+// Load a selected GLB into the same scene graph used by the local mesh tools.
 async function loadPolyPizzaModel(model){
   if(!model?.Download||!/^https:\/\//i.test(model.Download)){polyStatus("This model has no safe HTTPS GLB download URL.");return false;}
   polyStatus("Loading "+(model.Title||"model")+"…");
