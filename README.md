@@ -1,31 +1,38 @@
 # Lowpoly Studio
 
-A browser-based generative-art studio for creating low-poly landscapes, abstract compositions, and geometric gradients. No account, backend, or upload required.
+A voice-first, browser-based low-poly 3D blockout studio. Describe a simple object, inspect its procedural mesh in a rotatable viewport, refine supported details, and export geometry for Blender or Autodesk Maya.
 
-## Features
+## Current prototype
 
-- Three composition styles: landscape, abstract, and gradient.
-- Six palettes: Dusk, Forest, Candy, Ocean, Monochrome, and Ember.
-- Adjustable triangle density and color variation.
-- Reproducible seeds: the same seed and settings regenerate the same art.
-- Export scalable SVG or high-resolution 2× PNG.
-- Responsive desktop and mobile interface.
-- Local-first generation: artwork stays in your browser.
-- GitHub Actions for automated tests and Pages deployment.
+- **Microphone prompts:** browser speech recognition where supported; type-to-prompt remains available.
+- **Interactive 3D viewport:** orbit, zoom, front/side views, framing, selectable scene parts, solid, wireframe, X-ray, vertex points, ground grid, and hard-edge overlay.
+- **Procedural tabletop fan:** a clean, simple blockout with separately named base, stand, motor, blades, and cage components.
+- **Prompt refinements:** supported example commands include making the base wider, changing blade count, tilting the fan head, and resetting the model.
+- **3D exports:** OBJ (Blender and Maya), binary STL, and GLB (Blender; Maya compatibility depends on installed import support).
+- **Glass UI:** responsive, translucent panels inspired by Apple's system design language.
+- **Local-first:** prompt handling and mesh generation run in the browser; no AI service or prompt upload is configured.
 
 ## Try it
 
-When GitHub Pages deployment completes, open: https://wonka15.github.io/Low-poly-generator/
+https://wonka15.github.io/Low-poly-generator/
+
+If GitHub Pages is not enabled yet, open **Settings → Pages** and choose **GitHub Actions** as the deployment source.
 
 ## Run locally
 
-Requires Python 3 or another static HTTP server. No dependency installation is required for the app.
+Serve the folder over HTTP (the browser module imports and microphone APIs need a local server or HTTPS):
 
 ```bash
 python3 -m http.server 8000
 ```
 
 Open http://localhost:8000.
+
+## Notes on speech and mesh quality
+
+Microphone access requires permission and a supported browser. Speech recognition support varies by browser; the app provides a text prompt fallback. GitHub Pages is HTTPS, which is suitable for browser microphone permissions.
+
+This is currently a **procedural prototype**, not a connected generative-AI service. Voice prompts are matched to a small set of deterministic fan-edit commands. Exports are standard interchange formats; inspect topology, scale, normals, and part intersections in Blender or Maya before using a model in production. Separate overlapping components are intentional in this blockout and are not a single watertight manifold shell.
 
 ## Test
 
@@ -35,10 +42,6 @@ Requires Node.js 20 or newer.
 npm run check
 npm test
 ```
-
-## Publish on GitHub Pages
-
-The workflow at `.github/workflows/pages.yml` publishes the site on each push to `main`. In **Settings → Pages**, choose **GitHub Actions** as the deployment source if asked. The test workflow runs syntax checks and unit tests on pushes and pull requests.
 
 ## Project layout
 
