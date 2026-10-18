@@ -72,7 +72,11 @@ test("flower-in-vase model has a hollow vase and three complete flower heads", (
   result.group.traverse(o => { if (o.isMesh) meshes.push(o); });
   assert.ok(meshes.some(m => m.name === "Hollow vase body" && m.geometry.type === "LatheGeometry"));
   assert.equal(meshes.filter(m => m.name === "Flower center").length, 3);
-  assert.equal(meshes.filter(m => m.name === "Stem").length, 3);
+  const stems = meshes.filter(m => m.name === "Stem");
+  assert.equal(stems.length, 3);
+  // All stems must enter the narrow vase mouth instead of floating beside the rim.
+  assert.ok(stems.every(stem => Math.abs(stem.position.x) < 0.15));
+  assert.ok(stems.every(stem => stem.position.y - 0.36 <= 0.68));
 });
 
 test("mug handle and car wheels use expected orientations", () => {
