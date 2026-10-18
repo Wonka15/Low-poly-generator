@@ -98,7 +98,7 @@ test("shoe, controller, and flower use purpose-built readable geometry", () => {
   shoe.group.traverse(o => { if (o.isMesh) shoeMeshes.push(o); });
   assert.ok(shoeMeshes.some(m => m.name === "Sculpted sneaker upper" && m.geometry.type === "ExtrudeGeometry"));
   assert.ok(shoeMeshes.some(m => m.name === "Contoured rubber outsole" && m.geometry.type === "ExtrudeGeometry"));
-  assert.equal(shoeMeshes.filter(m => /^Lace /.test(m.name)).length, 4);
+  assert.equal(shoeMeshes.filter(m => /^Lace /.test(m.name)).length, 8);
 
   const controller = buildPromptModel(THREE, "a game controller", 1);
   const controllerMeshes = [];
