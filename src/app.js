@@ -31,11 +31,87 @@ const count=window.fanBladeCount||3,geo=new THREE.ExtrudeGeometry(bladeShape(.62
 for(let i=0;i<count;i++){const b=addMesh(head,geo.clone(),"Blade "+(i+1),"Blades",0x758b9e,[0,0,.16]);b.rotation.z=i*Math.PI*2/count+.25;}
 modelRoot.traverse(o=>{if(o.isMesh)o.geometry.computeVertexNormals();});scene.add(modelRoot);selectedPart=null;updateSelection();rebuildOverlays();updateStats();buildOutliner();controls.target.set(0,1.5,0);frameModel();window.currentModelType="fan";window.currentModelPrompt=$("#prompt")?.value||"Build me a tabletop fan with three blades.";const report=inspectMesh(modelRoot);$("#mesh-status").textContent=report.checksPassed?"Geometry checks passed":"Mesh needs review";$("#export-status").textContent=report.checksPassed?"Fan generated. Basic coordinate and degenerate-face checks passed; topology still needs review.":"Mesh validation found issues; inspect before exporting.";}
 function meshes(){const a=[];modelRoot.traverse(o=>{if(o.isMesh)a.push(o)});return a;}
-function rebuildOverlays(){edgeLines.forEach(o=>{o.parent?.remove(o);o.geometry.dispose();o.material.dispose();});edgeLines=[];if(vertexDots){scene.remove(vertexDots);vertexDots.geometry.dispose();vertexDots.material.dispose();vertexDots=null;}const pts=[];
-meshes().forEach(m=>{if(showEdges){const l=new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry,20),new THREE.LineBasicMaterial({color:0x0a111b,transparent:true,opacity:.85}));l.position.copy(m.position);l.quaternion.copy(m.quaternion);l.scale.copy(m.scale);m.parent.add(l);edgeLines.push(l);}if(currentMode==="vertices"){const p=m.geometry.getAttribute("position");for(let i=0;i<p.count;i++){const v=new THREE.Vector3().fromBufferAttribute(p,i);m.localToWorld(v);pts.push(v.x,v.y,v.z);}}});
-if(currentMode==="vertices"&&pts.length){const g=new THREE.BufferGeometry();g.setAttribute("position",new THREE.Float32BufferAttribute(pts,3));vertexDots=new THREE.Points(g,new THREE.PointsMaterial({color:0xb8f4e2,size:5,sizeAttenuation:false}));scene.add(vertexDots);}
-meshes().forEach(m=>{m.material.wireframe=currentMode==="wireframe";m.material.transparent=currentMode==="xray";m.material.opacity=currentMode==="xray"?.24:1;m.material.depthWrite=currentMode!=="xray";});if(selectedPart)highlight(selectedPart);}
-function highlight(part){meshes().forEach(m=>{m.material.emissive.set(m.userData.part===part?0x214d48:0x000000);m.material.emissiveIntensity=m.userData.part===part?.8:0;});}
+// GLTF assets may use material arrays or materials without emissive support.
+// Normalize material access so inspection modes never crash on imported models.
+function materialsFor(mesh) {
+  if (!mesh.material) return [];
+  return Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+}
+
+function rebuildOverlays() {
+  edgeLines.forEach((line) => {
+    line.parent?.remove(line);
+    line.geometry.dispose();
+    line.material.dispose();
+  });
+  edgeLines = [];
+
+  if (vertexDots) {
+    scene.remove(vertexDots);
+    vertexDots.geometry.dispose();
+    vertexDots.material.dispose();
+    vertexDots = null;
+  }
+
+  const points = [];
+  meshes().forEach((mesh) => {
+    if (showEdges) {
+      const line = new THREE.LineSegments(
+        new THREE.EdgesGeometry(mesh.geometry, 20),
+        new THREE.LineBasicMaterial({ color: 0x0a111b, transparent: true, opacity: 0.85 }),
+      );
+      // Match the mesh's local transform and parent so the edge overlay stays aligned.
+      line.position.copy(mesh.position);
+      line.quaternion.copy(mesh.quaternion);
+      line.scale.copy(mesh.scale);
+      mesh.parent.add(line);
+      edgeLines.push(line);
+    }
+
+    if (currentMode === "vertices") {
+      const position = mesh.geometry.getAttribute("position");
+      if (!position) return;
+      for (let i = 0; i < position.count; i++) {
+        const point = new THREE.Vector3().fromBufferAttribute(position, i);
+        mesh.localToWorld(point);
+        points.push(point.x, point.y, point.z);
+      }
+    }
+  });
+
+  if (currentMode === "vertices" && points.length) {
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.Float32BufferAttribute(points, 3));
+    vertexDots = new THREE.Points(
+      geometry,
+      new THREE.PointsMaterial({ color: 0xb8f4e2, size: 5, sizeAttenuation: false }),
+    );
+    scene.add(vertexDots);
+  }
+
+  meshes().forEach((mesh) => {
+    materialsFor(mesh).forEach((material) => {
+      material.wireframe = currentMode === "wireframe";
+      material.transparent = currentMode === "xray";
+      material.opacity = currentMode === "xray" ? 0.24 : 1;
+      material.depthWrite = currentMode !== "xray";
+      material.needsUpdate = true;
+    });
+  });
+
+  if (selectedPart) highlight(selectedPart);
+}
+
+function highlight(part) {
+  meshes().forEach((mesh) => {
+    materialsFor(mesh).forEach((material) => {
+      // Basic and custom GLTF materials do not all expose an emissive property.
+      if (!material.emissive) return;
+      material.emissive.set(mesh.userData.part === part ? 0x214d48 : 0x000000);
+      material.emissiveIntensity = mesh.userData.part === part ? 0.8 : 0;
+    });
+  });
+}
 function updateSelection(){highlight(selectedPart);$("#selected-name").textContent=selectedPart||"Nothing selected";$("#selected-type").textContent=selectedPart?(parts.get(selectedPart)||[]).length+" meshes":"—";document.querySelectorAll(".outliner-item").forEach(b=>b.classList.toggle("active",b.dataset.part===selectedPart));}
 function buildOutliner(){const order=[["Base","▰"],["Stand","▥"],["Motor","◉"],["Blades","✳"],["Cage","◎"],["Seat","▰"],["Legs","▥"],["Backrest","▤"],["Arms","▥"],["Top","▰"],["Body","▣"],["Roof","⌂"],["Door","▯"],["Windows","▦"],["Wheels","◉"],["Cabin","▱"],["Foliage","♠"],["Stem","│"],["Head","◉"],["Torso","▣"],["Face","◉"],["Feet","▰"],["Speaker cone","◉"],["Tweeter","◉"],["Cabinet","▣"],["Cushions","▰"],["Back","▰"],["Rails","▤"],["Cap","◠"],["Rock","◆"],["Teeth","✳"],["Axle","◎"],["Handle","◔"],["Neck","▥"],["Shoulder","▱"],["Rim","◉"]];for(const name of parts.keys())if(!order.some(x=>x[0]===name))order.push([name,"◈"]);$("#outliner").innerHTML="";for(const [name,icon] of order){if(!parts.has(name))continue;const b=document.createElement("button");b.className="outliner-item";b.dataset.part=name;b.innerHTML='<span class="tree-arrow">›</span><span class="object-icon">'+icon+'</span><span class="object-name">'+name+'</span><span class="object-type">'+parts.get(name).length+'×</span>';b.addEventListener("click",()=>{selectedPart=name;updateSelection();});$("#outliner").append(b);}$("#scene-count").textContent=parts.size+" parts";}
 function updateStats(){let v=0,f=0;meshes().forEach(m=>{const p=m.geometry.getAttribute("position");v+=p.count;f+=m.geometry.index?m.geometry.index.count/3:p.count/3;});$("#mesh-vertices").textContent=Math.round(v).toLocaleString();$("#mesh-faces").textContent=Math.round(f).toLocaleString();$("#mesh-status").textContent="Procedural geometry";}
@@ -128,8 +204,19 @@ async function loadPolyPizzaModel(model){
     const gltf=await new Promise((resolve,reject)=>gltfLoader.load(model.Download,resolve,undefined,reject));
     clearModel();modelRoot=gltf.scene||gltf.scenes?.[0]||new THREE.Group();modelRoot.name=model.Title||"Poly Pizza Model";
     modelRoot.traverse(o=>{if(o.isMesh){o.userData.part=o.userData.part||o.parent?.name||"Model";if(!parts.has(o.userData.part))parts.set(o.userData.part,[]);parts.get(o.userData.part).push(o);if(o.material){const mats=Array.isArray(o.material)?o.material:[o.material];for(const m of mats){m.flatShading=true;m.needsUpdate=true;}}}});
-    const box=new THREE.Box3().setFromObject(modelRoot),size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3()),max=Math.max(size.x,size.y,size.z)||1;
-    modelRoot.position.sub(center);modelRoot.scale.setScalar(3.2/max);modelRoot.position.y-=new THREE.Box3().setFromObject(modelRoot).min.y;
+    const box = new THREE.Box3().setFromObject(modelRoot);
+    const size = box.getSize(new THREE.Vector3());
+    const max = Math.max(size.x, size.y, size.z) || 1;
+
+    // Scale first, then center in world space. Translating by the pre-scaled
+    // center would leave large or offset source assets visibly off-center.
+    modelRoot.position.set(0, 0, 0);
+    modelRoot.scale.setScalar(3.2 / max);
+    const normalizedBox = new THREE.Box3().setFromObject(modelRoot);
+    const normalizedCenter = normalizedBox.getCenter(new THREE.Vector3());
+    modelRoot.position.x -= normalizedCenter.x;
+    modelRoot.position.y -= normalizedBox.min.y;
+    modelRoot.position.z -= normalizedCenter.z;
     scene.add(modelRoot);selectedPart=null;activeAssetCredit=assetAttribution(model);$("#model-title").textContent=model.Title||"Poly Pizza Model";
     updateSelection();rebuildOverlays();updateStats();buildOutliner();frameModel();
     $("#mesh-status").textContent="Poly Pizza asset loaded";
@@ -161,9 +248,26 @@ if(/reset|default|start over/.test(p)){window.fanBaseWide=false;window.fanTilt=0
 $("#prompt").value=raw;$("#export-status").textContent=changed?"Model updated from your prompt. Inspect the parts, then export.":"I don't recognize that edit yet. Try “make the base wider”, “add four blades”, or “tilt the head back”.";}
 $("#build-button").addEventListener("click",()=>parsePrompt($("#prompt").value));document.querySelectorAll("[data-prompt]").forEach(b=>b.addEventListener("click",()=>{const p=b.dataset.prompt;$("#prompt").value=p;parsePrompt(p);}));
 function refine(){const v=$("#refine-prompt").value.trim();if(!v)return;parsePrompt(v);$("#refine-prompt").value="";}$("#refine-button").addEventListener("click",refine);$("#refine-prompt").addEventListener("keydown",e=>{if(e.key==="Enter")refine();});
-document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));$("#detail").addEventListener("input",()=>{detail=Number($("#detail").value);$("#detail-value").textContent=["Very low","Low-poly","More detail"][detail];if(window.currentModelType==="fan")buildFan();else buildGeneric(window.currentModelPrompt||$("#prompt").value);});$("#show-grid").addEventListener("change",e=>grid.visible=e.target.checked);$("#show-edges").addEventListener("change",e=>{showEdges=e.target.checked;rebuildOverlays();});$("#reset-view").addEventListener("click",()=>{setCameraMode("perspective");document.querySelectorAll("[data-view]").forEach(b=>{const active=b.dataset.view==="perspective";b.classList.toggle("active",active);b.setAttribute("aria-pressed",String(active));});camera.position.set(5.8,4.1,8.5);controls.target.set(0,1.55,0);controls.update();});$("#focus-model").addEventListener("click",frameModel);
+document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));$("#detail").addEventListener("input", () => {
+  detail = Number($("#detail").value);
+  $("#detail-value").textContent = ["Very low", "Low-poly", "More detail"][detail];
+
+  if (window.currentModelType === "fan") {
+    buildFan();
+  } else if (window.currentModelType === "poly-pizza") {
+    // Procedural detail changes cannot regenerate a downloaded asset; preserve it.
+    $("#export-status").textContent =
+      "Mesh detail applies to procedural models. The loaded Poly Pizza asset was kept unchanged.";
+  } else {
+    buildGeneric(window.currentModelPrompt || $("#prompt").value);
+  }
+});$("#show-grid").addEventListener("change",e=>grid.visible=e.target.checked);$("#show-edges").addEventListener("change",e=>{showEdges=e.target.checked;rebuildOverlays();});$("#reset-view").addEventListener("click",()=>{setCameraMode("perspective");document.querySelectorAll("[data-view]").forEach(b=>{const active=b.dataset.view==="perspective";b.classList.toggle("active",active);b.setAttribute("aria-pressed",String(active));});camera.position.set(5.8,4.1,8.5);controls.target.set(0,1.55,0);controls.update();});$("#focus-model").addEventListener("click",frameModel);
 document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll("[data-view]").forEach(x=>{const active=x===b;x.classList.toggle("active",active);x.setAttribute("aria-pressed",String(active));});const requested=b.dataset.view;if(requested==="orthographic"||requested==="perspective"){setCameraMode(requested);return;}const c=controls.target.clone(),d=camera.position.distanceTo(c);if(requested==="front")camera.position.set(c.x,c.y,c.z+d);else if(requested==="side")camera.position.set(c.x+d,c.y,c.z);controls.update();}));
-function cleanupMesh(){let merged=0,removed=0,processed=0;for(const m of meshes()){const source=m.geometry;const p=source.getAttribute("position");if(!p)continue;const idx=source.index,count=idx?idx.count:p.count,triangles=[];for(let i=0;i+2<count;i+=3){const ids=[idx?idx.getX(i):i,idx?idx.getX(i+1):i+1,idx?idx.getX(i+2):i+2],a=new THREE.Vector3().fromBufferAttribute(p,ids[0]),b=new THREE.Vector3().fromBufferAttribute(p,ids[1]),c=new THREE.Vector3().fromBufferAttribute(p,ids[2]);if(![a.x,a.y,a.z,b.x,b.y,b.z,c.x,c.y,c.z].every(Number.isFinite)){removed++;continue;}if(new THREE.Vector3().subVectors(b,a).cross(new THREE.Vector3().subVectors(c,a)).lengthSq()<1e-16){removed++;continue;}triangles.push(...a.toArray(),...b.toArray(),...c.toArray());}const raw=new THREE.BufferGeometry();raw.setAttribute("position",new THREE.Float32BufferAttribute(triangles,3));const clean=mergeVertices(raw,1e-5);raw.dispose();clean.computeVertexNormals();merged+=Math.max(0,triangles.length/3-clean.getAttribute("position").count);m.geometry=clean;source.dispose();processed++;}modelRoot.updateMatrixWorld(true);rebuildOverlays();updateStats();const report=inspectMesh(modelRoot);$("#mesh-status").textContent=report.checksPassed?"Cleanup checks passed":"Mesh needs review";$("#export-status").textContent=`Cleanup complete: checked ${processed} mesh objects, merged ${merged} duplicate vertex references, removed ${removed} invalid or zero-area triangles. This does not detect every stray vertex or guarantee manifold topology.`;}
+function cleanupMesh(){let merged=0,removed=0,processed=0;for(const m of meshes()){const source=m.geometry;const p=source.getAttribute("position");if(!p)continue;const idx=source.index,count=idx?idx.count:p.count,triangles=[];for(let i=0;i+2<count;i+=3){const ids=[idx?idx.getX(i):i,idx?idx.getX(i+1):i+1,idx?idx.getX(i+2):i+2],a=new THREE.Vector3().fromBufferAttribute(p,ids[0]),b=new THREE.Vector3().fromBufferAttribute(p,ids[1]),c=new THREE.Vector3().fromBufferAttribute(p,ids[2]);if(![a.x,a.y,a.z,b.x,b.y,b.z,c.x,c.y,c.z].every(Number.isFinite)){removed++;continue;}if(new THREE.Vector3().subVectors(b,a).cross(new THREE.Vector3().subVectors(c,a)).lengthSq()<1e-16){removed++;continue;}triangles.push(...a.toArray(),...b.toArray(),...c.toArray());}const raw=new THREE.BufferGeometry();raw.setAttribute("position",new THREE.Float32BufferAttribute(triangles,3));const clean=mergeVertices(raw,1e-5);raw.dispose();clean.computeVertexNormals();merged+=Math.max(0,triangles.length/3-clean.getAttribute("position").count);m.geometry = clean;
+    // Imported GLTF scenes can share a geometry between multiple meshes.
+    // Dispose the original only after the final mesh stops referencing it.
+    if (!meshes().some((other) => other !== m && other.geometry === source)) source.dispose();
+    processed++;}modelRoot.updateMatrixWorld(true);rebuildOverlays();updateStats();const report=inspectMesh(modelRoot);$("#mesh-status").textContent=report.checksPassed?"Cleanup checks passed":"Mesh needs review";$("#export-status").textContent=`Cleanup complete: checked ${processed} mesh objects, merged ${merged} duplicate vertex references, removed ${removed} invalid or zero-area triangles. This does not detect every stray vertex or guarantee manifold topology.`;}
 $("#cleanup-mesh").addEventListener("click",cleanupMesh);
 function download(blob,name){const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);}
 function cloneForExport(){const c=modelRoot.clone(true);c.traverse(o=>{if(o.isMesh)o.material=new THREE.MeshStandardMaterial({color:0xbfc8d2,flatShading:true,roughness:.8});});c.updateMatrixWorld(true);return c;}
