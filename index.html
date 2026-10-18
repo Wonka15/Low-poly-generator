@@ -33,7 +33,7 @@
       <p class="muted-copy small">Connect your secure Cloudflare Worker once. Then voice or text can generate unfamiliar objects, not just catalog examples.</p>
       <label for="ai-endpoint" class="mini-label">AI BACKEND URL</label>
       <input id="ai-endpoint" class="library-input" type="url" inputmode="url" placeholder="https://your-worker.workers.dev" autocomplete="url" />
-      <button id="ai-save-endpoint" class="library-button">Save AI backend URL</button>
+      <div class="library-actions"><button id="ai-save-endpoint" class="library-button">Save AI backend URL</button><button id="ai-clear-endpoint" class="library-button">Disconnect</button></div>
       <p id="ai-status" class="library-status" role="status" aria-live="polite">Not connected. Local procedural models still work.</p>
       <p class="library-disclaimer">The URL is saved in this browser only. Your provider API key stays on the backend, never in this page. AI generation can use paid credits.</p>
     </section>
