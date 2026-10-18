@@ -12,7 +12,7 @@ This project is hosted on GitHub Pages, which cannot safely store a private 3D-g
 6. The deploy output prints a URL similar to `https://lowpoly-studio-ai.<your-account>.workers.dev`.
 7. Open Lowpoly Studio, expand **AI Text-to-3D**, paste that Worker URL into **AI backend URL**, and save it. Use the full URL without a trailing slash.
 
-The frontend only stores the public Worker URL in this browser; it never asks for or stores the provider key. The Worker accepts requests only from the configured GitHub Pages origin by default. If you host the app elsewhere, update `ALLOWED_ORIGIN` in `wrangler.toml` before deploying.
+The frontend only stores the public Worker URL in this browser; it never asks for or stores the provider key. The Worker accepts browser requests only from the configured GitHub Pages origin by default and has a best-effort limit of three generation starts per minute per client IP per Worker isolate. CORS is not authentication, and this in-memory limit is not a hard security boundary. Before opening the service to a wider audience, add a Cloudflare WAF rate-limiting rule to `/api/generate` and monitor provider usage. If you host the app elsewhere, update `ALLOWED_ORIGIN` in `wrangler.toml` before deploying.
 
 ## What it does
 
