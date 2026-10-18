@@ -89,39 +89,31 @@ export function buildPromptModel(THREE, prompt, detail=1) {
     add(new THREE.CylinderGeometry(.34,.34,.13,10,1,false),"Flat candy disc","Candy",[0,.82,0],[Math.PI/2,0,0]);
     add(new THREE.CylinderGeometry(.065,.065,.04,8,1,false),"Candy collar","Stick",[0,.54,0],[Math.PI/2,0,0]);
   } else if(type==="controller") {
-    // A shaped, shallow extruded gamepad shell: wide grips, narrow waist,
-    // and raised shoulders read as a controller silhouette from the front.
+    // Front-facing shell, spaced thumbsticks, cross-shaped D-pad and action buttons.
     const shellShape=new THREE.Shape();
-    shellShape.moveTo(-.48,.17);
-    shellShape.quadraticCurveTo(-.68,.24,-.76,.04);
-    shellShape.lineTo(-.82,-.19);
-    shellShape.quadraticCurveTo(-.84,-.35,-.69,-.35);
-    shellShape.quadraticCurveTo(-.57,-.34,-.43,-.20);
-    shellShape.quadraticCurveTo(-.30,-.12,-.19,-.12);
-    shellShape.lineTo(.19,-.12);
-    shellShape.quadraticCurveTo(.30,-.12,.43,-.20);
-    shellShape.quadraticCurveTo(.57,-.34,.69,-.35);
-    shellShape.quadraticCurveTo(.84,-.35,.82,-.19);
-    shellShape.lineTo(.76,.04);
-    shellShape.quadraticCurveTo(.68,.24,.48,.17);
-    shellShape.quadraticCurveTo(.30,.10,.18,.10);
-    shellShape.lineTo(-.18,.10);
-    shellShape.quadraticCurveTo(-.30,.10,-.48,.17);
-    const shellGeo=new THREE.ExtrudeGeometry(shellShape,{depth:.22,bevelEnabled:true,bevelSegments:1,steps:1,bevelSize:.025,bevelThickness:.025,curveSegments:3});
-    shellGeo.translate(0,0,-.11);
-    add(shellGeo,"Ergonomic controller shell","Shell",[0,.48,0]);
-    // Controls face +Z, the visible front of the controller.
-    const stick=(name,x,y,z)=>add(new THREE.CylinderGeometry(.078,.09,.07,8),name,"Thumbsticks",[x,y,z],[Math.PI/2,0,0]);
-    stick("Left thumbstick",-.31,.49,.155);
-    stick("Right thumbstick",.25,.49,.155);
-    const dpadY=.49,dpadZ=.17;
-    add(box(.25,.07,.055),"D-pad horizontal","D-pad",[-.49,dpadY,dpadZ]);
-    add(box(.07,.25,.055),"D-pad vertical","D-pad",[-.49,dpadY,dpadZ]);
-    for(const [i,pos] of [[0,[.48,.58,.17]],[1,[.57,.49,.17]],[2,[.39,.49,.17]],[3,[.48,.40,.17]]]) {
-      add(new THREE.CylinderGeometry(.045,.05,.045,8),"Action button "+(i+1),"Buttons",pos,[Math.PI/2,0,0]);
+    shellShape.moveTo(-.47,.16);shellShape.quadraticCurveTo(-.66,.23,-.75,.02);
+    shellShape.lineTo(-.82,-.18);shellShape.quadraticCurveTo(-.84,-.34,-.68,-.35);
+    shellShape.quadraticCurveTo(-.55,-.34,-.42,-.20);shellShape.quadraticCurveTo(-.29,-.12,-.16,-.12);
+    shellShape.lineTo(.16,-.12);shellShape.quadraticCurveTo(.29,-.12,.42,-.20);
+    shellShape.quadraticCurveTo(.55,-.34,.68,-.35);shellShape.quadraticCurveTo(.84,-.34,.82,-.18);
+    shellShape.lineTo(.75,.02);shellShape.quadraticCurveTo(.66,.23,.47,.16);
+    shellShape.quadraticCurveTo(.28,.09,.16,.09);shellShape.lineTo(-.16,.09);
+    shellShape.quadraticCurveTo(-.28,.09,-.47,.16);
+    const shellGeo=new THREE.ExtrudeGeometry(shellShape,{depth:.20,bevelEnabled:true,bevelSegments:1,steps:1,bevelSize:.025,bevelThickness:.025,curveSegments:4});
+    shellGeo.translate(0,0,-.10);add(shellGeo,"Controller body","Shell",[0,.52,0]);
+    const stick=(name,x,y)=>{
+      add(new THREE.CylinderGeometry(.085,.10,.045,10),name+" rim","Thumbsticks",[x,y,.14],[Math.PI/2,0,0]);
+      add(new THREE.CylinderGeometry(.062,.07,.055,10),name,"Thumbsticks",[x,y,.18],[Math.PI/2,0,0]);
+    };
+    stick("Left thumbstick",-.27,.52);stick("Right thumbstick",.22,.52);
+    const dx=-.49,dy=.51,dz=.145;
+    add(box(.22,.065,.045),"D-pad left-right","D-pad",[dx,dy,dz]);
+    add(box(.065,.22,.045),"D-pad up-down","D-pad",[dx,dy,dz]);
+    for(const [i,pos] of [[0,[.47,.62]],[1,[.56,.52]],[2,[.38,.52]],[3,[.47,.42]]]) {
+      add(new THREE.CylinderGeometry(.046,.052,.05,8),"Action button "+(i+1),"Buttons",[pos[0],pos[1],.15],[Math.PI/2,0,0]);
     }
-    add(box(.12,.045,.035),"Menu button","Buttons",[-.08,.49,.16]);
-    add(box(.12,.045,.035),"Logo button","Buttons",[.08,.49,.16]);
+    add(box(.10,.035,.025),"Select button","Buttons",[-.09,.46,.145]);
+    add(box(.10,.035,.025),"Start button","Buttons",[.09,.46,.145]);
   } else if(type==="chair" || type==="stool") {
     const h=type==="stool"?.72:.82, seatY=h;
     add(box(.95*smaller,.13,.9),"Seat","Seat",[0,seatY,0]);
