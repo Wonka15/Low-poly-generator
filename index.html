@@ -22,12 +22,13 @@
     <div class="panel-heading"><div><span class="eyebrow">01 / PROMPT</span><h2>Describe it.</h2></div><span class="step-icon">✳</span></div>
     <p class="muted-copy">Speak naturally. Start with a simple object, then refine one detail at a time.</p>
     <div class="prompt-box">
-      <label for="prompt">YOUR MODEL</label>
-      <textarea id="prompt" rows="3" placeholder="Build me a tabletop fan with three blades…">Build me a low-poly tabletop fan with three blades.</textarea>
+      <label>FIXED STARTER SENTENCE</label><div class="starter-phrase" aria-label="Fixed starter sentence">Build me a low poly set up</div>
+      <label for="prompt" class="object-label">WHAT SHOULD I MAKE?</label>
+      <textarea id="prompt" rows="3" placeholder="Say or type: a lollipop, F1 car, controller, flower in a vase…">a tabletop fan with three blades</textarea>
       <div class="prompt-actions"><span id="mic-status" class="mic-status">Ready when you are</span><button id="mic-button" class="mic-button" aria-label="Start microphone input" title="Use microphone"><span class="mic-symbol">🎙</span><span id="mic-label">Speak</span></button></div>
     </div>
     <button id="build-button" class="button-primary"><span>✦</span> Build 3D model <span class="button-arrow">↗</span></button>
-    <div class="suggestions"><span class="mini-label">TRY SAYING</span><button class="suggestion" data-prompt="Build me a tabletop fan with three blades">“A tabletop fan”</button><button class="suggestion" data-prompt="Build me a low-poly chair with four legs">“A chair with four legs”</button><button class="suggestion" data-prompt="Create a small low-poly house">“A small house”</button><button class="suggestion" data-prompt="Make me a low-poly robot">“A robot”</button><button class="suggestion" data-prompt="Make the fan base wider">“Make the base wider”</button><button class="suggestion" data-prompt="Tilt the fan head back a little">“Tilt the head back”</button></div>
+    <div class="suggestions"><span class="mini-label">OBJECT LIBRARY · TAP TO BUILD</span><button class="suggestion" data-prompt="a lollipop">🍭 Lollipop</button><button class="suggestion" data-prompt="a compact car">🚗 Car</button><button class="suggestion" data-prompt="an F1 race car">🏎️ F1 race car</button><button class="suggestion" data-prompt="a game controller">🎮 Game controller</button><button class="suggestion" data-prompt="a flower">🌸 Flower</button><button class="suggestion" data-prompt="a flower in a vase">💐 Flower in a vase</button><button class="suggestion" data-prompt="a small house">🏠 House</button><button class="suggestion" data-prompt="a Japanese maple tree">🍁 Japanese maple tree</button><button class="suggestion" data-prompt="a low-poly frog">🐸 Frog</button><button class="suggestion" data-prompt="a sneaker with laces">👟 Sneaker</button><button class="suggestion" data-prompt="a tabletop fan with three blades">🌀 Tabletop fan</button></div>
     <div class="panel-divider"></div>
     <div class="panel-heading compact"><div><span class="eyebrow">02 / REFINE</span><h3>Adjust the mesh.</h3></div></div>
     <p class="muted-copy small">Select a part in the viewport, or describe the change below.</p>
