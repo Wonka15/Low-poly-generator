@@ -1,18 +1,69 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#11131a"><meta name="description" content="Generate low-poly landscapes and abstract geometric art. Free, private, and exportable.">
-<title>Lowpoly Studio — Generative Art</title><link rel="stylesheet" href="styles.css"><script type="module" src="src/app.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#10141d">
+<meta name="description" content="A voice-first low-poly 3D model studio. Describe a model, inspect its mesh, refine it, and export to Blender or Maya.">
+<title>Lowpoly Studio — Voice to 3D</title>
+<link rel="stylesheet" href="styles.css">
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"}}</script>
+<script type="module" src="src/app.js"></script>
 </head>
 <body>
-<header class="topbar"><a class="brand" href="./"><span class="mark">△</span> LOWPOLY <span class="muted">STUDIO</span></a><div class="top-meta"><span class="dot"></span> GENERATIVE ART <a href="https://github.com/Wonka15/Low-poly-generator" class="github">Open source ↗</a></div></header>
-<main class="shell"><section class="intro"><p class="eyebrow">✳ YOUR CANVAS. YOUR RULES.</p><h1>Make something<br><em>geometrically</em> beautiful.</h1><p class="lead">Turn randomness into art. Generate low-poly landscapes, gradients, and abstract compositions — right here in your browser.</p></section>
-<section class="workspace"><aside class="controls"><div class="section-title">ART DIRECTION <span>01 / 03</span></div><label class="label">Composition</label><div class="styles"><button data-style="landscape" class="style active" aria-pressed="true">▱<small>Landscape</small></button><button data-style="abstract" class="style" aria-pressed="false">◈<small>Abstract</small></button><button data-style="gradient" class="style" aria-pressed="false">◩<small>Gradient</small></button></div>
-<div class="control"><div class="label-row"><label class="label" for="density">Triangle density</label><output id="density-value">Medium</output></div><input id="density" type="range" min="3" max="11" value="6"><div class="ends"><span>Big shapes</span><span>Fine detail</span></div></div>
-<div class="control"><div class="label-row"><label class="label" for="variation">Color variation</label><output id="variation-value">68%</output></div><input id="variation" type="range" min="0" max="100" value="68"></div>
-<div class="control"><label class="label">Color palette</label><div class="palettes"><button data-palette="dusk" class="palette active" aria-pressed="true"><span style="--colors:#243b55,#4c6684,#ed8b72,#f4c78c"></span>Dusk</button><button data-palette="forest" class="palette" aria-pressed="false"><span style="--colors:#173f35,#38745b,#91b77d,#e2d6a5"></span>Forest</button><button data-palette="candy" class="palette" aria-pressed="false"><span style="--colors:#543b79,#a55d91,#f09a9c,#ffd6a5"></span>Candy</button><button data-palette="ocean" class="palette" aria-pressed="false"><span style="--colors:#123b58,#197b8a,#52b6a5,#d4e7c5"></span>Ocean</button><button data-palette="mono" class="palette" aria-pressed="false"><span style="--colors:#1a1b1f,#50535b,#9699a3,#e8e9ed"></span>Mono</button><button data-palette="ember" class="palette" aria-pressed="false"><span style="--colors:#42221b,#873d2c,#d36b3b,#f6c36b"></span>Ember</button></div></div>
-<div class="control"><div class="label-row"><label class="label" for="seed">Random seed</label><button id="new-seed" class="link-button">↻ New seed</button></div><input id="seed" class="seed" value="GEOMETRY-01" maxlength="32" autocomplete="off" spellcheck="false"><p class="hint">Same seed + settings = same artwork.</p></div>
-<div class="actions"><button id="generate" class="primary">✳ Generate artwork <kbd>↵</kbd></button><button id="surprise" class="secondary">Surprise me <span>↗</span></button></div><p id="status" class="status" role="status" aria-live="polite">Your next masterpiece is one click away.</p></aside>
-<section class="preview"><div class="preview-head"><span><i class="dot"></i> <b id="preview-title">UNTITLED LANDSCAPE</b></span><span id="triangle-count">— triangles　/　LIVE PREVIEW</span></div><div class="art-wrap"><div class="artboard"><canvas id="art-canvas" width="1200" height="800" aria-label="Generated low-poly artwork"></canvas><div class="watermark"><span>LOWPOLY STUDIO</span><span id="art-seed">SEED: GEOMETRY-01</span></div></div></div><div class="preview-foot"><div><b>Looks good?</b><small>Take your art with you.</small></div><div class="exports"><button id="export-svg">↓ Export SVG</button><button id="export-png" class="export-primary">↓ Export PNG</button></div></div></section></section>
-<section class="features"><div><b>01</b><p><strong>Always unique</strong><small>Reproducible, seeded randomness.</small></p></div><div><b>02</b><p><strong>Export-ready</strong><small>Scalable SVG or crisp 2× PNG.</small></p></div><div><b>03</b><p><strong>Private by design</strong><small>Your art stays on your device.</small></p></div></section><footer><span>LOWPOLY STUDIO / GENERATIVE ART FOR EVERYONE</span><span>MADE OF TRIANGLES <b>◆</b></span></footer></main>
-</body></html>
+<div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
+<header class="topbar glass">
+  <a class="brand" href="./"><span class="brand-mark">◈</span><span>LOWPOLY<span class="brand-light"> STUDIO</span></span><span class="beta">BETA</span></a>
+  <div class="top-center"><span class="live-dot"></span> VOICE-TO-MESH WORKSPACE</div>
+  <a class="github-link" href="https://github.com/Wonka15/Low-poly-generator" target="_blank" rel="noreferrer">Source <span>↗</span></a>
+</header>
+<main class="app-shell">
+  <aside class="left-panel glass">
+    <div class="panel-heading"><div><span class="eyebrow">01 / PROMPT</span><h2>Describe it.</h2></div><span class="step-icon">✳</span></div>
+    <p class="muted-copy">Speak naturally. Start with a simple object, then refine one detail at a time.</p>
+    <div class="prompt-box">
+      <label for="prompt">YOUR MODEL</label>
+      <textarea id="prompt" rows="3" placeholder="Build me a tabletop fan with three blades…">Build me a low-poly tabletop fan with three blades.</textarea>
+      <div class="prompt-actions"><span id="mic-status" class="mic-status">Ready when you are</span><button id="mic-button" class="mic-button" aria-label="Start microphone input" title="Use microphone"><span class="mic-symbol">🎙</span><span id="mic-label">Speak</span></button></div>
+    </div>
+    <button id="build-button" class="button-primary"><span>✦</span> Build 3D model <span class="button-arrow">↗</span></button>
+    <div class="suggestions"><span class="mini-label">TRY SAYING</span><button class="suggestion" data-prompt="Build me a tabletop fan with three blades">“A tabletop fan”</button><button class="suggestion" data-prompt="Make the fan base wider">“Make the base wider”</button><button class="suggestion" data-prompt="Tilt the fan head back a little">“Tilt the head back”</button></div>
+    <div class="panel-divider"></div>
+    <div class="panel-heading compact"><div><span class="eyebrow">02 / REFINE</span><h3>Adjust the mesh.</h3></div></div>
+    <p class="muted-copy small">Select a part in the viewport, or describe the change below.</p>
+    <div class="selected-part"><span class="selection-dot"></span><span id="selected-name">Nothing selected</span><span id="selected-type">—</span></div>
+    <div class="refine-row"><input id="refine-prompt" type="text" placeholder="e.g. add one more blade"><button id="refine-button" aria-label="Apply refinement">↗</button></div>
+    <div class="mini-label mode-label">INSPECTION MODE</div>
+    <div class="mode-grid">
+      <button class="mode-button active" data-mode="solid" aria-pressed="true"><span>◧</span> Solid</button>
+      <button class="mode-button" data-mode="wireframe" aria-pressed="false"><span>⌘</span> Wireframe</button>
+      <button class="mode-button" data-mode="xray" aria-pressed="false"><span>◌</span> X-ray</button>
+      <button class="mode-button" data-mode="vertices" aria-pressed="false"><span>⠿</span> Vertices</button>
+    </div>
+    <div class="control-row"><label for="detail">Mesh detail</label><output id="detail-value">Low-poly</output></div><input id="detail" type="range" min="0" max="2" step="1" value="1">
+    <div class="check-row"><label for="show-grid">Ground grid</label><input id="show-grid" type="checkbox" checked></div>
+    <div class="check-row"><label for="show-edges">Show hard edges</label><input id="show-edges" type="checkbox"></div>
+    <div class="panel-note"><span>ⓘ</span><p>Generated geometry is procedural and local to this browser. Review the mesh before production use.</p></div>
+  </aside>
+  <section class="center-stage">
+    <div class="viewport-top glass"><div><span class="eyebrow">03 / VIEWPORT</span><strong id="model-title">Tabletop Fan</strong><span class="viewport-subtitle">Procedural mesh · no materials baked</span></div><div class="viewport-tools"><button id="reset-view" title="Reset camera">⟲ <span>Reset</span></button><button id="focus-model" title="Frame model">⌗ <span>Frame</span></button></div></div>
+    <div id="viewport" class="viewport"><div class="viewport-hint"><span class="orbit-icon">↻</span> DRAG TO ORBIT <i></i> SCROLL TO ZOOM</div><div class="axis-label axis-y">Y</div><div class="axis-label axis-x">X</div><div class="viewport-loading" id="viewport-loading">Preparing 3D viewport…</div></div>
+    <div class="viewport-bottom glass"><div class="mesh-stats"><span><i></i><b id="mesh-vertices">—</b> vertices</span><span><i></i><b id="mesh-faces">—</b> faces</span><span class="clean-status"><i></i><b id="mesh-status">Ready to inspect</b></span></div><div class="view-chips"><button class="view-chip active" data-view="perspective">Perspective</button><button class="view-chip" data-view="front">Front</button><button class="view-chip" data-view="side">Side</button></div></div>
+  </section>
+  <aside class="right-panel glass">
+    <div class="panel-heading"><div><span class="eyebrow">04 / SCENE</span><h2>Outliner</h2></div><span class="scene-count" id="scene-count">5 parts</span></div>
+    <div id="outliner" class="outliner"></div>
+    <div class="panel-divider"></div>
+    <div class="panel-heading compact"><div><span class="eyebrow">05 / EXPORT</span><h3>Take it further.</h3></div></div>
+    <p class="muted-copy small">Neutral geometry, ready to open in your 3D app.</p>
+    <div class="export-card"><div class="export-icon blender">◉</div><div class="export-copy"><strong>Blender</strong><span>OBJ · GLB · STL</span></div><span class="export-check">✓</span></div>
+    <div class="export-card"><div class="export-icon maya">M</div><div class="export-copy"><strong>Autodesk Maya</strong><span>OBJ · STL</span></div><span class="export-check">✓</span></div>
+    <button id="export-obj" class="button-primary export-main"><span>↓</span> Export OBJ <span class="button-arrow">↗</span></button>
+    <div class="export-secondary"><button id="export-glb">Export GLB</button><button id="export-stl">Export STL</button></div>
+    <p id="export-status" class="export-status" role="status" aria-live="polite">OBJ imports into Blender and Maya.</p>
+    <div class="format-note"><strong>Clean-mesh checklist</strong><span>✓ Consistent scale & object names</span><span>✓ Triangulated, manifold primitives</span><span>✓ No textures or visual effects</span><span>ⓘ Run app-specific validation after import</span></div>
+  </aside>
+</main>
+<footer class="app-footer"><span>LOWPOLY STUDIO <i>·</i> VOICE-FIRST 3D BLOCKOUTS</span><span>LOCAL-FIRST <i>·</i> NO PROMPT UPLOAD</span></footer>
+</body>
+</html>
