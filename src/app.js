@@ -192,14 +192,14 @@ async function searchPolyHaven(query,{autoLoad=false}={}){
   const serial=++polyHavenSearchSerial;$("#haven-search").value=q;havenStatus("Searching Poly Haven…");
   try{
     const endpoint="https://api.polyhaven.com/search?q="+encodeURIComponent(q)+"&t=models&limit=8&min=0.25";
-    const response=await fetch(endpoint);
+    const response=await fetch(endpoint,{referrer:"https://wonka15.github.io/Low-poly-generator/",referrerPolicy:"unsafe-url"});
     if(!response.ok)throw new Error("Poly Haven returned HTTP "+response.status);
     const data=await response.json();
     const hits=Array.isArray(data.results)?data.results:[];
     const assets=await Promise.all(hits.slice(0,8).map(async hit=>{
       const slug=hit.slug||hit.assetID||hit.id;if(!slug)return null;
       try{
-        const infoResponse=await fetch("https://api.polyhaven.com/info/"+encodeURIComponent(slug));
+        const infoResponse=await fetch("https://api.polyhaven.com/info/"+encodeURIComponent(slug),{referrer:"https://wonka15.github.io/Low-poly-generator/",referrerPolicy:"unsafe-url"});
         if(!infoResponse.ok)return null;
         const info=await infoResponse.json();
         return {...info,slug,score:hit.score,thumbnail_url:info.thumbnail_url||info.thumbnail||""};
@@ -220,7 +220,7 @@ async function searchPolyHaven(query,{autoLoad=false}={}){
 async function loadPolyHavenModel(asset){
   try{
     havenStatus("Preparing "+(asset.name||asset.slug)+"…");
-    const response=await fetch("https://api.polyhaven.com/files/"+encodeURIComponent(asset.slug));
+    const response=await fetch("https://api.polyhaven.com/files/"+encodeURIComponent(asset.slug),{referrer:"https://wonka15.github.io/Low-poly-generator/",referrerPolicy:"unsafe-url"});
     if(!response.ok)throw new Error("file list returned HTTP "+response.status);
     const files=await response.json(),url=havenAssetUrl(files);
     if(!url)throw new Error("no directly loadable GLB/glTF file was listed for this model");
