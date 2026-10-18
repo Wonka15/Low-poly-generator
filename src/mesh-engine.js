@@ -88,14 +88,39 @@ export function buildPromptModel(THREE, prompt, detail=1) {
     add(new THREE.IcosahedronGeometry(.34,1),"Candy","Candy",[0,.78,0]);
     add(cyl(.055,.055,.1,8),"Candy collar","Stick",[0,.57,0]);
   } else if(type==="controller") {
-    const shell=add(new THREE.IcosahedronGeometry(.57,1),"Controller shell","Shell",[0,.42,0]);shell.scale.set(1.35,.48,.72);
-    add(cyl(.095,.095,.07,8),"Left thumbstick","Thumbsticks",[-.32,.65,.12]);
-    add(cyl(.095,.095,.07,8),"Right thumbstick","Thumbsticks",[.22,.65,-.02]);
-    add(box(.29,.055,.055),"D-pad horizontal","D-pad",[-.34,.65,-.12]);
-    add(box(.055,.055,.29),"D-pad vertical","D-pad",[-.34,.65,-.12]);
-    for(const [i,pos] of [[0,[.35,.65,.17]],[1,[.45,.65,.06]],[2,[.25,.65,.06]],[3,[.35,.65,-.05]]])add(new THREE.IcosahedronGeometry(.055,0),"Action button "+(i+1),"Buttons",pos);
-    add(box(.16,.035,.07),"Menu button","Buttons",[0,.65,-.22]);
-    add(box(.12,.045,.09),"Logo button","Buttons",[0,.66,.08]);
+    // A shaped, shallow extruded gamepad shell: wide grips, narrow waist,
+    // and raised shoulders read as a controller silhouette from the front.
+    const shellShape=new THREE.Shape();
+    shellShape.moveTo(-.48,.17);
+    shellShape.quadraticCurveTo(-.68,.24,-.76,.04);
+    shellShape.lineTo(-.82,-.19);
+    shellShape.quadraticCurveTo(-.84,-.35,-.69,-.35);
+    shellShape.quadraticCurveTo(-.57,-.34,-.43,-.20);
+    shellShape.quadraticCurveTo(-.30,-.12,-.19,-.12);
+    shellShape.lineTo(.19,-.12);
+    shellShape.quadraticCurveTo(.30,-.12,.43,-.20);
+    shellShape.quadraticCurveTo(.57,-.34,.69,-.35);
+    shellShape.quadraticCurveTo(.84,-.35,.82,-.19);
+    shellShape.lineTo(.76,.04);
+    shellShape.quadraticCurveTo(.68,.24,.48,.17);
+    shellShape.quadraticCurveTo(.30,.10,.18,.10);
+    shellShape.lineTo(-.18,.10);
+    shellShape.quadraticCurveTo(-.30,.10,-.48,.17);
+    const shellGeo=new THREE.ExtrudeGeometry(shellShape,{depth:.22,bevelEnabled:true,bevelSegments:1,steps:1,bevelSize:.025,bevelThickness:.025,curveSegments:3});
+    shellGeo.translate(0,0,-.11);
+    add(shellGeo,"Ergonomic controller shell","Shell",[0,.48,0]);
+    // Controls face +Z, the visible front of the controller.
+    const stick=(name,x,y,z)=>add(new THREE.CylinderGeometry(.078,.09,.07,8),name,"Thumbsticks",[x,y,z],[Math.PI/2,0,0]);
+    stick("Left thumbstick",-.31,.49,.155);
+    stick("Right thumbstick",.25,.49,.155);
+    const dpadY=.49,dpadZ=.17;
+    add(box(.25,.07,.055),"D-pad horizontal","D-pad",[-.49,dpadY,dpadZ]);
+    add(box(.07,.25,.055),"D-pad vertical","D-pad",[-.49,dpadY,dpadZ]);
+    for(const [i,pos] of [[0,[.48,.58,.17]],[1,[.57,.49,.17]],[2,[.39,.49,.17]],[3,[.48,.40,.17]]]) {
+      add(new THREE.CylinderGeometry(.045,.05,.045,8),"Action button "+(i+1),"Buttons",pos,[Math.PI/2,0,0]);
+    }
+    add(box(.12,.045,.035),"Menu button","Buttons",[-.08,.49,.16]);
+    add(box(.12,.045,.035),"Logo button","Buttons",[.08,.49,.16]);
   } else if(type==="chair" || type==="stool") {
     const h=type==="stool"?.72:.82, seatY=h;
     add(box(.95*smaller,.13,.9),"Seat","Seat",[0,seatY,0]);
@@ -135,9 +160,27 @@ export function buildPromptModel(THREE, prompt, detail=1) {
       const x=(f-1)*.085,z=(f%2)*.05;
       add(rod(.025,.72,5),"Stem","Stem",[x,baseY+.36,z]);
       add(new THREE.IcosahedronGeometry(.105,0),"Leaf","Leaves",[x+.1,baseY+.28,z],[0,0,-.55]);
-      const center=[x,baseY+.78,z];
-      add(new THREE.IcosahedronGeometry(.105,0),"Flower center","Flower center",center);
-      for(let i=0;i<6;i++){const a=i*Math.PI/3;const petal=add(new THREE.IcosahedronGeometry(.105,0),"Petal","Petals",[x+Math.cos(a)*.16,baseY+.79+Math.sin(a)*.16,z]);petal.scale.set(1,.8,1);}
+      const centerY=baseY+.78;
+      add(new THREE.IcosahedronGeometry(.085,0),"Flower center","Flower center",[x,centerY,z]);
+      // Each petal is a tapered, slightly cupped low-poly leaf, not a sphere.
+      // Its long axis points radially out from the flower center.
+      const petalGeo=()=>{
+        const positions=[
+          0,0,0,  .11,-.075,0,  .245,0,0,  .11,.075,0,
+          .105,0,.035,  .105,0,-.025
+        ];
+        const indices=[
+          0,1,4, 1,2,4, 2,3,4, 3,0,4,
+          1,0,5, 2,1,5, 3,2,5, 0,3,5
+        ];
+        const g=new THREE.BufferGeometry();
+        g.setAttribute("position",new THREE.Float32BufferAttribute(positions,3));
+        g.setIndex(indices);g.computeVertexNormals();return g;
+      };
+      for(let i=0;i<6;i++){
+        const a=i*Math.PI/3;
+        add(petalGeo(),"Petal "+(i+1),"Petals",[x,centerY,z],[0,0,a]);
+      }
     }
   } else if(type==="house") {
     add(box(1.5,1.05,1.25),"House body","Body",[0,.55,0]);
@@ -204,16 +247,46 @@ export function buildPromptModel(THREE, prompt, detail=1) {
     }
     const mouth=add(new THREE.TorusGeometry(.19,.018,4,12,Math.PI),"Mouth","Face",[0,.66,.765]);mouth.rotation.z=Math.PI;
   } else if(type==="shoe") {
-    // Toe points toward +Z; named components remain selectable in the outliner.
-    add(box(.72,.13,1.42),"Rubber sole","Sole",[0,.12,.02]);
-    add(box(.7,.09,1.34),"Midsole","Sole",[0,.205,.02]);
-    const upper=add(new THREE.IcosahedronGeometry(.43,1),"Upper","Upper",[0,.39,-.02]);upper.scale.set(.82,.66,1.18);
-    const toe=add(new THREE.IcosahedronGeometry(.32,1),"Toe cap","Toe",[0,.34,.43]);toe.scale.set(1,.72,1.05);
-    add(box(.28,.23,.25),"Tongue","Tongue",[0,.56,.08]);
-    add(box(.42,.045,.48),"Opening","Opening",[0,.59,-.13]);
-    for(let i=0;i<4;i++){const z=.13-i*.12;const lace=add(box(.32,.025,.035),"Lace "+(i+1),"Laces",[0,.61,z]);lace.rotation.y=(i%2?-.12:.12);}
-    for(const s of [-1,1])add(box(.045,.07,.58),"Side trim","Trim",[s*.285,.39,-.05]);
-    add(box(.38,.045,.12),"Heel tab","Heel",[0,.53,-.55]);
+    // Side-profile sneaker upper extruded across its width gives a proper toe,
+    // instep, heel collar and grounded sole instead of stacked cuboids.
+    const soleShape=new THREE.Shape();
+    soleShape.moveTo(-.68,0);soleShape.lineTo(.58,0);
+    soleShape.quadraticCurveTo(.72,.015,.70,.085);
+    soleShape.lineTo(-.60,.085);soleShape.quadraticCurveTo(-.72,.07,-.68,0);
+    const soleGeo=new THREE.ExtrudeGeometry(soleShape,{depth:.54,bevelEnabled:false,steps:1,curveSegments:3});
+    soleGeo.rotateY(-Math.PI/2);soleGeo.translate(-.27,0,0);
+    add(soleGeo,"Contoured rubber outsole","Sole",[0,.10,0]);
+    const midsoleShape=new THREE.Shape();
+    midsoleShape.moveTo(-.65,.08);midsoleShape.lineTo(.58,.08);
+    midsoleShape.quadraticCurveTo(.68,.09,.65,.14);
+    midsoleShape.lineTo(-.59,.14);midsoleShape.quadraticCurveTo(-.68,.13,-.65,.08);
+    const midsoleGeo=new THREE.ExtrudeGeometry(midsoleShape,{depth:.52,bevelEnabled:false,steps:1,curveSegments:3});
+    midsoleGeo.rotateY(-Math.PI/2);midsoleGeo.translate(-.26,0,0);
+    add(midsoleGeo,"Midsole band","Sole",[0,.10,0]);
+    const upperShape=new THREE.Shape();
+    upperShape.moveTo(-.60,.13);
+    upperShape.quadraticCurveTo(-.63,.25,-.51,.34);
+    upperShape.lineTo(-.31,.43);
+    upperShape.quadraticCurveTo(-.20,.48,-.08,.49);
+    upperShape.lineTo(.20,.39);
+    upperShape.quadraticCurveTo(.38,.34,.56,.25);
+    upperShape.quadraticCurveTo(.65,.21,.61,.14);
+    upperShape.lineTo(-.60,.13);
+    const upperGeo=new THREE.ExtrudeGeometry(upperShape,{depth:.43,bevelEnabled:true,bevelSegments:1,steps:1,bevelSize:.018,bevelThickness:.015,curveSegments:4});
+    upperGeo.rotateY(-Math.PI/2);upperGeo.translate(-.215,0,0);
+    add(upperGeo,"Sculpted sneaker upper","Upper",[0,.10,0]);
+    // A raised tongue and paired lace crossings make the top instantly legible.
+    add(box(.22,.045,.32),"Padded tongue","Tongue",[0,.56,.015]);
+    add(box(.31,.035,.16),"Heel collar","Opening",[0,.48,-.38]);
+    for(let i=0;i<4;i++){
+      const z=.16-i*.105;
+      const lace=add(box(.30,.018,.035),"Lace "+(i+1),"Laces",[0,.585,z]);
+      lace.rotation.y=i%2?-.13:.13;
+    }
+    for(const s of [-1,1]){
+      add(box(.035,.025,.42),"Stitching strip","Trim",[s*.222,.35,-.015]);
+    }
+    add(box(.30,.06,.075),"Heel pull tab","Heel",[0,.57,-.53]);
   } else if(type==="gear") {
     add(cyl(.62,.62,.16,12),"Gear body","Body",[0,.62,0]);add(cyl(.18,.18,.22,12),"Axle hole placeholder","Axle",[0,.62,0]);
     for(let i=0;i<8;i++){const a=i*Math.PI/4;add(box(.18,.16,.16),"Tooth","Teeth",[Math.cos(a)*.65,.62,Math.sin(a)*.65]);}
