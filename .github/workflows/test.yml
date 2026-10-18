@@ -17,4 +17,5 @@ jobs:
           node-version: 20
       - run: npm install
       - run: npm run check
+      - run: node --check worker/index.js
       - run: npm test
