@@ -132,7 +132,12 @@ export function buildPromptModel(THREE, prompt, detail=1) {
     }
   } else if(type==="house") {
     add(box(1.5,1.05,1.25),"House body","Body",[0,.55,0]);
-    const roof=new THREE.Mesh(new THREE.ConeGeometry(1.12,.72,4),material());roof.name="Roof";roof.userData.part="Roof";roof.position.set(0,1.42,0);roof.rotation.y=Math.PI/4;group.add(roof);if(!partMap.has("Roof"))partMap.set("Roof",[]);partMap.get("Roof").push(roof);
+    // Build a four-sided pyramid from explicit triangles. ConeGeometry duplicates
+    // its apex per side, which can create zero-area triangles in a square-roof mesh.
+    const roofVertices=[], roofBase=[[-.82,0,-.68],[.82,0,-.68],[.82,0,.68],[-.82,0,.68]], roofApex=[0,.72,0];
+    for(let i=0;i<4;i++){const a=roofBase[i],b=roofBase[(i+1)%4];roofVertices.push(...roofApex,...b,...a);}
+    const roofGeometry=new THREE.BufferGeometry();roofGeometry.setAttribute("position",new THREE.Float32BufferAttribute(roofVertices,3));roofGeometry.computeVertexNormals();
+    const roof=add(roofGeometry,"Roof","Roof",[0,1.06,0]);roof.material.side=THREE.DoubleSide;
     add(box(.28,.58,.06),"Door","Door",[0,.3,.66]);for(const x of [-.43,.43])add(box(.24,.24,.06),"Window","Windows",[x,.72,.66]);
   } else if(type==="japanese_maple") {
     add(cyl(.11,.2,1.05,7),"Trunk","Trunk",[0,.52,0]);
