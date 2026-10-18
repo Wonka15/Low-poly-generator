@@ -84,9 +84,10 @@ export function buildPromptModel(THREE, prompt, detail=1) {
     for(let i=0;i<12;i++){const a=i*Math.PI/6;const s=add(rod(.012,.76,5),"Cage spoke","Cage",[Math.sin(a)*.38,Math.cos(a)*.38,.08]);s.rotation.z=-a;head.add(s);}
     for(let i=0;i<blades;i++){const a=i*Math.PI*2/blades;const b=add(box(.19,.62,.045),"Blade "+(i+1),"Blades",[Math.sin(a)*.22,Math.cos(a)*.22,.15]);b.rotation.z=-a+.18;head.add(b);}
   } else if(type==="lollipop") {
-    add(cyl(.045,.045,.58,8),"Stick","Stick",[0,.3,0]);
-    add(new THREE.IcosahedronGeometry(.34,1),"Candy","Candy",[0,.78,0]);
-    add(cyl(.055,.055,.1,8),"Candy collar","Stick",[0,.57,0]);
+    // Flat-faced low-poly candy disc, not a spherical golf-ball shape.
+    add(cyl(.045,.045,.62,8),"Stick","Stick",[0,.32,0]);
+    add(new THREE.CylinderGeometry(.34,.34,.13,10,1,false),"Flat candy disc","Candy",[0,.82,0],[Math.PI/2,0,0]);
+    add(new THREE.CylinderGeometry(.065,.065,.04,8,1,false),"Candy collar","Stick",[0,.54,0],[Math.PI/2,0,0]);
   } else if(type==="controller") {
     // A shaped, shallow extruded gamepad shell: wide grips, narrow waist,
     // and raised shoulders read as a controller silhouette from the front.
