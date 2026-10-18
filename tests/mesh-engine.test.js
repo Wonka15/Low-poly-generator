@@ -180,3 +180,45 @@ test("sneaker has contrasting panels and crossed laces", () => {
   assert.ok(meshes.some(m => m.name === "Rounded contrasting toe cap" && m.material.color.getHex() !== meshes.find(x => x.name === "Sculpted sneaker upper").material.color.getHex()));
   assert.ok(meshes.filter(m => /Side stripe/.test(m.name)).length >= 4);
 });
+
+test("house has low-poly architectural depth with overhang, framed windows, and chimney", () => {
+  const result = buildPromptModel(THREE, "a small house", 1);
+  const meshes = [];
+  result.group.traverse(o => { if (o.isMesh) meshes.push(o); });
+  assert.ok(meshes.some(m => m.name === "Foundation plinth"));
+  assert.equal(meshes.filter(m => /^Window frame /.test(m.name)).length, 8);
+  assert.equal(meshes.filter(m => /^Window pane$/.test(m.name)).length, 2);
+  assert.equal(meshes.filter(m => /^Chimney/.test(m.name)).length, 2);
+  assert.ok(meshes.length < 30, "house should stay intentionally low-poly");
+});
+
+test("Japanese maple detail levels change leaf count without changing leaf geometry", () => {
+  const counts = [0, 1, 2].map(detail => {
+    const result = buildPromptModel(THREE, "a Japanese maple tree", detail);
+    const leaves = [];
+    result.group.traverse(o => { if (o.isMesh && o.name === "Pointed maple leaf") leaves.push(o); });
+    assert.ok(leaves.every(m => m.geometry.type === "ExtrudeGeometry"));
+    return leaves.length;
+  });
+  assert.ok(counts[0] < counts[1] && counts[1] < counts[2], "higher detail should add a few leaf clusters");
+  assert.ok(counts[2] <= 21, "maple canopy should remain low-poly");
+});
+
+test("all catalog meshes use intentional colors rather than the generic grey fallback", () => {
+  const catalog = [
+    "a lollipop", "a compact car", "an F1 race car", "a game controller",
+    "a flower", "a flower in a vase", "a small house", "a Japanese maple tree",
+    "a low-poly frog", "a sneaker with laces", "a tabletop fan with three blades",
+    "a chair", "a table", "a stool", "a mug", "a bottle", "a vase", "a tree",
+    "a lamp", "a robot", "a sofa", "a speaker", "a crate", "a mushroom", "a rock", "a gear"
+  ];
+  for (const prompt of catalog) {
+    const result = buildPromptModel(THREE, prompt, 1);
+    result.group.traverse(o => {
+      if (o.isMesh) {
+        assert.ok(o.material.color.getHex() !== 0xbfc9d4,
+          prompt + " has an unassigned grey material on " + o.name + " (" + o.userData.part + ")");
+      }
+    });
+  }
+});

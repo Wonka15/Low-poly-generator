@@ -54,7 +54,7 @@ export function buildPromptModel(THREE, prompt, detail=1) {
     controller:{Shell:0x30343b,Thumbsticks:0x16191e,"D-pad":0x111318,Buttons:0xf0c75e},
     shoe:{Sole:0xf0eee8,Upper:0x28628a,Toe:0xf0eee8,Tongue:0x4f91b5,Laces:0xfaf7f0,Opening:0x202a35,Trim:0xe8b84a,Heel:0xf0eee8},
     lollipop:{Candy:0xf04478,Stick:0xf2d5a0},
-    house:{Body:0xf1d4a7,Roof:0xc6533b,Door:0x70452e,Windows:0x76c8e8},
+    house:{Body:0xf1d4a7,Roof:0xc6533b,Door:0x70452e,Windows:0x76c8e8,"Window frames":0xf7e8c9,Foundation:0x9b9b91,Chimney:0x9b7770},
     japanese_maple:{Trunk:0x65412f,Branches:0x76503a,"Canopy red":0xc73548,"Canopy orange":0xe66a3c,"Canopy gold":0xf0a84d,Veins:0x9c2939},
     tree:{Trunk:0x755037,Foliage:0x4e8b49},
     flower:{Stem:0x39834b,Leaves:0x48a65b,"Flower center":0xf5c542,Petals:0xf06a9b},
@@ -208,13 +208,27 @@ export function buildPromptModel(THREE, prompt, detail=1) {
     }
   } else if(type==="house") {
     add(box(1.5,1.05,1.25),"House body","Body",[0,.55,0]);
+    // A thin plinth grounds the house without adding dense or decorative geometry.
+    add(box(1.64,.10,1.39),"Foundation plinth","Foundation",[0,.075,0]);
     // Build a four-sided pyramid from explicit triangles. ConeGeometry duplicates
     // its apex per side, which can create zero-area triangles in a square-roof mesh.
-    const roofVertices=[], roofBase=[[-.82,0,-.68],[.82,0,-.68],[.82,0,.68],[-.82,0,.68]], roofApex=[0,.72,0];
+    const roofVertices=[], roofBase=[[-.88,0,-.74],[.88,0,-.74],[.88,0,.74],[-.88,0,.74]], roofApex=[0,.72,0];
     for(let i=0;i<4;i++){const a=roofBase[i],b=roofBase[(i+1)%4];roofVertices.push(...roofApex,...b,...a);}
     const roofGeometry=new THREE.BufferGeometry();roofGeometry.setAttribute("position",new THREE.Float32BufferAttribute(roofVertices,3));roofGeometry.computeVertexNormals();
     const roof=add(roofGeometry,"Roof","Roof",[0,1.06,0]);roof.material.side=THREE.DoubleSide;
-    add(box(.28,.58,.06),"Door","Door",[0,.3,.66]);for(const x of [-.43,.43])add(box(.24,.24,.06),"Window","Windows",[x,.72,.66]);
+    // Simple framed windows: four chunky frame bars around a recessed blue pane.
+    add(box(.28,.58,.06),"Door","Door",[0,.3,.66]);
+    for(const x of [-.43,.43]){
+      add(box(.19,.19,.025),"Window pane","Windows",[x,.72,.647]);
+      const z=.675, w=.29, h=.29, t=.035;
+      add(box(w,t,.045),"Window frame top","Window frames",[x,.72+h/2,z]);
+      add(box(w,t,.045),"Window frame bottom","Window frames",[x,.72-h/2,z]);
+      add(box(t,h,.045),"Window frame left","Window frames",[x-w/2,.72,z]);
+      add(box(t,h,.045),"Window frame right","Window frames",[x+w/2,.72,z]);
+    }
+    // Short, block-built chimney tucked into the rear roof slope.
+    add(box(.20,.38,.20),"Chimney stack","Chimney",[.42,1.52,-.28]);
+    add(box(.26,.055,.25),"Chimney cap","Chimney",[.42,1.74,-.28]);
   } else if(type==="japanese_maple") {
     // A branching, layered momiji canopy with recognizable pointed palmate leaves
     // and a Japanese-maple autumn palette (crimson, vermilion and golden orange).
@@ -234,7 +248,8 @@ export function buildPromptModel(THREE, prompt, detail=1) {
       [-.40,1.35,-.02],[-.18,1.48,.10],[.12,1.48,.02],[.40,1.36,-.02],
       [-.31,1.68,.03],[0,1.72,-.08],[.31,1.68,.04],[-.13,1.94,0],[.16,1.91,.02]
     ];
-    canopyClusters.forEach((pos,i)=>{
+    // Detail levels alter leaf-cluster count, not the recognizable leaf shape.
+    canopyClusters.slice(0,[5,7,9][clamp(Number(detail)||0,0,2)]).forEach((pos,i)=>{
       const colors=["Canopy red","Canopy orange","Canopy gold"];
       const count=i%3===1?3:2;
       for(let j=0;j<count;j++){
