@@ -210,9 +210,9 @@ export function buildPromptModel(THREE, prompt, detail=1) {
     add(box(.40,.12,.62),"Rear engine cover","Body",[0,.42,-.36]);
     add(box(.24,.10,.42),"Nose spine","Nose",[0,.36,.50]);
     add(new THREE.CylinderGeometry(.015,.20,.68,8,1,false),"Tapered nose","Nose",[0,.32,.79],[Math.PI/2,0,0]);
-    add(box(1.36,.055,.24),"Front wing main plane","Front wing",[0,.20,.82]);
+    add(box(1.36,.055,.24),"Front wing main plane","Front wing",[0,.20,1.00]);
     for(const s of [-1,1]) {
-      add(box(.045,.16,.20),"Front wing endplate","Front wing",[s*.64,.24,.82]);
+      add(box(.045,.16,.20),"Front wing endplate","Front wing",[s*.64,.24,1.00]);
       add(box(.25,.13,.70),"Side pod","Body",[s*.36,.31,-.02]);
     }
     add(box(.34,.12,.40),"Cockpit surround","Cockpit",[0,.43,.10]);
@@ -231,7 +231,7 @@ export function buildPromptModel(THREE, prompt, detail=1) {
     const cabinShape=new THREE.Shape();
     cabinShape.moveTo(-.52,0);cabinShape.lineTo(.52,0);cabinShape.lineTo(.37,.34);cabinShape.lineTo(-.32,.34);cabinShape.closePath();
     const cabinGeo=new THREE.ExtrudeGeometry(cabinShape,{depth:.80,bevelEnabled:true,bevelSegments:1,steps:1,bevelSize:.025,bevelThickness:.025,curveSegments:3});
-    cabinGeo.translate(0,0,-.40);add(cabinGeo,"Sloped passenger cabin","Cabin",[0,.63,-.10]);
+    cabinGeo.translate(0,0,-.40);add(cabinGeo,"Sloped passenger cabin","Cabin",[0,.54,-.10]);
     add(box(1.18,.09,.20),"Front bumper","Bumpers",[0,.27,.94]);
     add(box(1.18,.09,.20),"Rear bumper","Bumpers",[0,.27,-.94]);
     for(const x of [-.69,.69]) for(const z of [-.57,.57]) {
@@ -294,6 +294,10 @@ export function buildPromptModel(THREE, prompt, detail=1) {
     const upperGeo=new THREE.ExtrudeGeometry(upperShape,{depth:.43,bevelEnabled:true,bevelSegments:1,steps:1,bevelSize:.018,bevelThickness:.015,curveSegments:4});
     upperGeo.rotateY(-Math.PI/2);upperGeo.translate(-.215,0,0);
     add(upperGeo,"Sculpted sneaker upper","Upper",[0,.10,0]);
+    // Rounded low-poly toe overlay softens the front profile while staying faceted.
+    const toeCap=add(new THREE.SphereGeometry(.25,8,5),"Rounded toe cap","Toe",[0,.32,.48]);
+    toeCap.scale.set(1.12,.62,1.05);
+    add(box(.34,.16,.10),"Heel counter","Heel",[0,.39,-.43]);
     // A raised tongue and paired lace crossings make the top instantly legible.
     add(box(.22,.045,.32),"Padded tongue","Tongue",[0,.56,.015]);
     add(box(.31,.035,.16),"Heel collar","Opening",[0,.48,-.38]);
