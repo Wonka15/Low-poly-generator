@@ -98,7 +98,7 @@ export function buildPromptModel(THREE, prompt, detail=1) {
     for(let i=0;i<legCount;i++){const a=2*Math.PI*i/legCount+Math.PI/4;add(box(.12,.86*taller,.12),"Leg "+(i+1),"Legs",[Math.cos(a)*.72,topY-.48*taller,Math.sin(a)*.4]);}
   } else if(type==="mug") {
     add(cyl(.38,.32,.72,segments),"Cup body","Body",[0,.38,0]);
-    add(new THREE.TorusGeometry(.29,.055,6,segments),"Handle","Handle",[.36,.42,0],[Math.PI/2,0,0]);
+    add(new THREE.TorusGeometry(.29,.055,6,segments),"Handle","Handle",[.36,.42,0]); // Face the handle toward the viewer, in the XY plane.
   } else if(type==="bottle" || type==="vase") {
     const base=type==="bottle"?.35:.5, bodyH=type==="bottle"?.78:.9;
     add(cyl(base*.86,base,bodyH,segments),"Body","Body",[0,bodyH/2,0]);
@@ -107,9 +107,19 @@ export function buildPromptModel(THREE, prompt, detail=1) {
     add(cyl(type==="bottle"?.14:.24,type==="bottle"?.14:.24,.06,segments),"Rim","Rim",[0,bodyH+.53,0]);
   } else if(type==="flower" || type==="flower_vase") {
     if(type==="flower_vase"){
-      add(cyl(.3,.4,.55,8),"Vase body","Vase",[0,.28,0]);
-      add(cyl(.19,.22,.16,8),"Vase neck","Vase",[0,.62,0]);
-      add(cyl(.23,.23,.06,8),"Vase rim","Vase",[0,.72,0]);
+      // A lathed wall profile gives the vase a real open mouth and visible inner wall,
+      // instead of stacking solid cylinders that cap the opening.
+      const profile=[
+        new THREE.Vector2(.06,.10),new THREE.Vector2(.25,.10),
+        new THREE.Vector2(.32,.14),new THREE.Vector2(.37,.27),
+        new THREE.Vector2(.35,.40),new THREE.Vector2(.28,.51),
+        new THREE.Vector2(.18,.59),new THREE.Vector2(.18,.68),
+        new THREE.Vector2(.23,.68),new THREE.Vector2(.23,.58),
+        new THREE.Vector2(.30,.49),new THREE.Vector2(.33,.39),
+        new THREE.Vector2(.34,.27),new THREE.Vector2(.29,.16),
+        new THREE.Vector2(.23,.13),new THREE.Vector2(.06,.13)
+      ];
+      add(new THREE.LatheGeometry(profile,8),"Hollow vase body","Vase",[0,0,0]);
     }
     const baseY=type==="flower_vase"?.72:0;
     for(let f=0;f<(type==="flower_vase"?3:1);f++){
@@ -151,7 +161,7 @@ export function buildPromptModel(THREE, prompt, detail=1) {
     add(box(.12,.1,.34),"Front nose","Body",[0,.25,.43]);
   } else if(type==="car") {
     add(box(1.65,.42,.82),"Chassis","Body",[0,.38,0]);add(box(.9,.38,.7),"Cabin","Cabin",[0,.76,-.03]);
-    for(const x of [-.56,.56])for(const z of [-.44,.44])add(new THREE.CylinderGeometry(.2,.2,.12,10),"Wheel","Wheels",[x,.22,z],[Math.PI/2,0,0]);
+    for(const x of [-.56,.56])for(const z of [-.44,.44])add(new THREE.CylinderGeometry(.2,.2,.12,10),"Wheel","Wheels",[x,.22,z],[0,0,Math.PI/2]); // Axles run left-to-right, matching the wheel positions.
   } else if(type==="sofa") {
     add(box(1.7,.28,.75),"Seat base","Base",[0,.35,0]);add(box(1.7,.52,.18),"Back cushion","Back",[0,.7,-.29]);
     for(const s of [-1,1]){add(box(.22,.48,.75),"Armrest","Arms",[s*.78,.56,0]);add(box(.72,.16,.58),"Seat cushion","Cushions",[s*.4,.58,.02]);}
