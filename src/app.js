@@ -282,6 +282,41 @@ function filename(ext){return ($("#model-title").textContent.toLowerCase().repla
 $("#export-obj").addEventListener("click",()=>{try{download(new Blob([new OBJExporter().parse(cloneForExport())],{type:"text/plain;charset=utf-8"}),filename("obj"));$("#export-status").textContent="OBJ exported. Import into Blender or Maya and validate before production."; }catch(e){$("#export-status").textContent="OBJ export failed: "+e.message;}});
 $("#export-stl").addEventListener("click",()=>{try{download(new Blob([new STLExporter().parse(cloneForExport(),{binary:true})],{type:"model/stl"}),filename("stl"));$("#export-status").textContent="Binary STL exported. STL contains geometry only, not named scene hierarchy.";}catch(e){$("#export-status").textContent="STL export failed: "+e.message;}});
 $("#export-glb").addEventListener("click",async()=>{try{$("#export-status").textContent="Preparing GLB…";const out=await new GLTFExporter().parseAsync(cloneForExport(),{binary:true});download(new Blob([out],{type:"model/gltf-binary"}),filename("glb"));$("#export-status").textContent="GLB exported with named parts. Blender supports GLB import; Maya support depends on plugins.";}catch(e){$("#export-status").textContent="GLB export failed: "+e.message;}});
-function micStatus(s){$("#mic-status").textContent=s;}const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;if(SpeechRecognition){recognition=new SpeechRecognition();recognition.lang=navigator.language||"en-US";recognition.interimResults=true;recognition.continuous=false;recognition.onstart=()=>{listening=true;$("#mic-button").classList.add("recording");$("#mic-label").textContent="Listening";micStatus("Listening… speak now");};recognition.onresult=e=>{let finalText="",interim="";for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)finalText+=e.results[i][0].transcript;else interim+=e.results[i][0].transcript;}$("#prompt").value=finalText||interim;if(finalText)micStatus("Speech captured. Building…");};recognition.onerror=e=>micStatus(e.error==="not-allowed"?"Microphone permission denied":"Mic issue: "+e.error);recognition.onend=()=>{listening=false;$("#mic-button").classList.remove("recording");$("#mic-label").textContent="Speak";if($("#prompt").value.trim())parsePrompt($("#prompt").value.trim());};}
+function micStatus(s){$("#mic-status").textContent=s;}
+let speechDraft="";
+const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+if(SpeechRecognition){
+  recognition=new SpeechRecognition();
+  recognition.lang=navigator.language||"en-US";
+  recognition.interimResults=true;
+  recognition.continuous=false;
+  recognition.onstart=()=>{
+    speechDraft="";
+    listening=true;
+    $("#mic-button").classList.add("recording");
+    $("#mic-label").textContent="Listening";
+    micStatus("Listening… speak now");
+  };
+  recognition.onresult=e=>{
+    let finalText="",interim="";
+    for(let i=0;i<e.results.length;i++){
+      const transcript=e.results[i][0].transcript;
+      if(e.results[i].isFinal)finalText+=transcript;
+      else interim+=transcript;
+    }
+    speechDraft=(finalText||interim).trim();
+    $("#prompt").value=speechDraft;
+    if(finalText)micStatus("Speech captured. Building…");
+  };
+  recognition.onerror=e=>micStatus(e.error==="not-allowed"?"Microphone permission denied":"Mic issue: "+e.error);
+  recognition.onend=()=>{
+    listening=false;
+    $("#mic-button").classList.remove("recording");
+    $("#mic-label").textContent="Speak";
+    // Only build when this recording produced speech; never rebuild stale text after a mic error.
+    if(speechDraft)parsePrompt(speechDraft);
+    else if(!$("#mic-status").textContent.includes("permission denied"))micStatus("No speech detected. Try again or type a prompt.");
+  };
+}
 $("#mic-button").addEventListener("click",()=>{if(!recognition){micStatus("Speech recognition is not supported here. Type a prompt instead.");return;}if(listening)recognition.stop();else{try{recognition.start();}catch(e){micStatus("Microphone is starting — try again.");}}});
 window.fanBaseWide=false;window.fanTilt=0;window.fanBladeCount=3;resize();buildFan();
