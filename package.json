@@ -1,0 +1,9 @@
+{
+  "name": "lowpoly-generator",
+  "version": "1.0.0",
+  "private": false,
+  "type": "module",
+  "description": "A browser-based generative low-poly art studio with reproducible seeds and SVG/PNG export.",
+  "scripts": { "test": "node --test", "check": "node --check src/app.js && node --check src/generator.js" },
+  "engines": { "node": ">=20" }
+}
