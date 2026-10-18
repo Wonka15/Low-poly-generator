@@ -218,8 +218,19 @@ export function buildPromptModel(THREE, prompt, detail=1) {
       add(new THREE.CylinderGeometry(.125,.125,.19,10,1,false),"Wheel hub","Wheels",[x,.24,z],[0,0,Math.PI/2]);
     }
   } else if(type==="car") {
-    add(box(1.65,.42,.82),"Chassis","Body",[0,.38,0]);add(box(.9,.38,.7),"Cabin","Cabin",[0,.76,-.03]);
-    for(const x of [-.56,.56])for(const z of [-.44,.44])add(new THREE.CylinderGeometry(.2,.2,.12,10),"Wheel","Wheels",[x,.22,z],[0,0,Math.PI/2]); // Axles run left-to-right, matching the wheel positions.
+    // Road-car proportions: long bonnet, raised sloped cabin, bumpers and four tyres.
+    add(box(1.30,.30,1.82),"Lower body","Body",[0,.39,0]);
+    add(box(1.18,.24,.58),"Front hood","Body",[0,.54,.57]);
+    const cabinShape=new THREE.Shape();
+    cabinShape.moveTo(-.52,0);cabinShape.lineTo(.52,0);cabinShape.lineTo(.37,.34);cabinShape.lineTo(-.32,.34);cabinShape.closePath();
+    const cabinGeo=new THREE.ExtrudeGeometry(cabinShape,{depth:.80,bevelEnabled:true,bevelSegments:1,steps:1,bevelSize:.025,bevelThickness:.025,curveSegments:3});
+    cabinGeo.translate(0,0,-.40);add(cabinGeo,"Sloped passenger cabin","Cabin",[0,.63,-.10]);
+    add(box(1.18,.09,.20),"Front bumper","Bumpers",[0,.27,.94]);
+    add(box(1.18,.09,.20),"Rear bumper","Bumpers",[0,.27,-.94]);
+    for(const x of [-.69,.69]) for(const z of [-.57,.57]) {
+      add(new THREE.CylinderGeometry(.205,.205,.16,10,1,false),"Road tyre","Wheels",[x,.25,z],[0,0,Math.PI/2]);
+      add(new THREE.CylinderGeometry(.11,.11,.17,10,1,false),"Wheel hub","Wheels",[x,.25,z],[0,0,Math.PI/2]);
+    }
   } else if(type==="sofa") {
     add(box(1.7,.28,.75),"Seat base","Base",[0,.35,0]);add(box(1.7,.52,.18),"Back cushion","Back",[0,.7,-.29]);
     for(const s of [-1,1]){add(box(.22,.48,.75),"Armrest","Arms",[s*.78,.56,0]);add(box(.72,.16,.58),"Seat cushion","Cushions",[s*.4,.58,.02]);}
