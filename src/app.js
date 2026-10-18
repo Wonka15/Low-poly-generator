@@ -327,10 +327,117 @@ $("#poly-connect").addEventListener("click",()=>{
 $("#poly-search-button").addEventListener("click",()=>searchPolyPizza($("#poly-search").value));
 $("#poly-search").addEventListener("keydown",e=>{if(e.key==="Enter")searchPolyPizza($("#poly-search").value);});
 
+
+const AI_ENDPOINT_STORAGE_KEY = "lowpoly-ai-endpoint";
+let aiGenerationSerial = 0;
+function aiStatus(message) {
+  const el = $("#ai-status");
+  if (el) el.textContent = message;
+}
+function readAIEndpoint() {
+  const field = $("#ai-endpoint");
+  let saved = "";
+  try { saved = localStorage.getItem(AI_ENDPOINT_STORAGE_KEY) || ""; } catch {}
+  if (field && !field.value.trim() && saved) field.value = saved;
+  return String(field?.value || saved).trim().replace(/\/+$/, "");
+}
+$("#ai-save-endpoint")?.addEventListener("click", () => {
+  const endpoint = readAIEndpoint();
+  if (!endpoint) {
+    try { localStorage.removeItem(AI_ENDPOINT_STORAGE_KEY); } catch {}
+    aiStatus("AI backend cleared. Builds will use the local procedural library.");
+    return;
+  }
+  if (!/^https:\/\//i.test(endpoint)) {
+    aiStatus("Enter the full HTTPS URL printed by wrangler deploy.");
+    return;
+  }
+  try { localStorage.setItem(AI_ENDPOINT_STORAGE_KEY, endpoint); } catch {}
+  $("#ai-endpoint").value = endpoint;
+  aiStatus("AI backend URL saved in this browser. Try building any object.");
+});
+async function generateWithAI(raw) {
+  const endpoint = readAIEndpoint();
+  if (!endpoint) return false;
+  const serial = ++aiGenerationSerial;
+  const prompt = String(raw || "").trim();
+  if (!prompt) return false;
+  try {
+    aiStatus("Sending shape-first prompt to Tripo…");
+    $("#export-status").textContent = "AI generation requested. This may take a minute; provider usage credits may apply.";
+    const start = await fetch(endpoint + "/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt })
+    });
+    const startData = await start.json().catch(() => ({}));
+    if (!start.ok || !startData.taskId) throw new Error(startData.error || "AI backend could not start generation (HTTP " + start.status + ").");
+    const taskId = startData.taskId;
+    let task;
+    for (let attempt = 0; attempt < 90; attempt++) {
+      if (serial !== aiGenerationSerial) return true;
+      await new Promise(resolve => setTimeout(resolve, 4000));
+      const response = await fetch(endpoint + "/api/tasks/" + encodeURIComponent(taskId));
+      task = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(task.error || "Could not check AI generation status.");
+      const state = String(task.status || "").toLowerCase();
+      aiStatus(state === "success" ? "AI mesh ready. Loading into the viewport…" : "Generating low-poly mesh… " + Math.max(0, Math.min(100, Number(task.progress || 0))) + "%");
+      if (state === "success") break;
+      if (state === "failed" || state === "cancelled") throw new Error(task.error || "The AI provider could not generate this object. Try a simpler description.");
+    }
+    if (!task || String(task.status).toLowerCase() !== "success") throw new Error("Generation timed out. Check the provider account and try again.");
+    if (!task.modelUrl || !/^https:\/\//i.test(task.modelUrl)) throw new Error("Provider finished without a safe HTTPS model URL.");
+    const gltf = await new Promise((resolve, reject) => gltfLoader.load(task.modelUrl, resolve, undefined, reject));
+    if (serial !== aiGenerationSerial) return true;
+    clearModel();
+    modelRoot = gltf.scene || gltf.scenes?.[0] || new THREE.Group();
+    const objectName = cleanAssetQuery(prompt) || "AI Low-Poly Model";
+    modelRoot.name = objectName.charAt(0).toUpperCase() + objectName.slice(1);
+    modelRoot.traverse(o => {
+      if (!o.isMesh) return;
+      o.userData.part = o.userData.part || o.parent?.name || "Body";
+      if (!parts.has(o.userData.part)) parts.set(o.userData.part, []);
+      parts.get(o.userData.part).push(o);
+      const material = mat(0xbfc9d4);
+      if (Array.isArray(o.material)) o.material = o.material.map(() => material.clone());
+      else o.material = material;
+      o.castShadow = false;
+      o.receiveShadow = false;
+    });
+    const sourceBox = new THREE.Box3().setFromObject(modelRoot);
+    const sourceSize = sourceBox.getSize(new THREE.Vector3());
+    const maxDimension = Math.max(sourceSize.x, sourceSize.y, sourceSize.z) || 1;
+    modelRoot.position.set(0, 0, 0);
+    modelRoot.scale.setScalar(3.2 / maxDimension);
+    const normalizedBox = new THREE.Box3().setFromObject(modelRoot);
+    const center = normalizedBox.getCenter(new THREE.Vector3());
+    modelRoot.position.set(-center.x, -normalizedBox.min.y, -center.z);
+    modelRoot.updateMatrixWorld(true);
+    scene.add(modelRoot);
+    selectedPart = null;
+    $("#model-title").textContent = modelRoot.name;
+    window.currentModelType = "ai-generated";
+    window.currentModelPrompt = prompt;
+    updateSelection(); rebuildOverlays(); updateStats(); buildOutliner(); frameModel();
+    const report = inspectMesh(modelRoot);
+    $("#mesh-status").textContent = report.checksPassed ? "AI mesh checks passed" : "AI mesh needs review";
+    $("#export-status").textContent = "AI-generated low-poly blockout loaded (" + report.triangles.toLocaleString() + " triangles). Materials are replaced with neutral preview materials; export and refine the geometry in Blender/Maya. Basic checks do not guarantee manifold topology.";
+    aiStatus("Ready: " + modelRoot.name + " · " + report.triangles.toLocaleString() + " triangles.");
+    return true;
+  } catch (error) {
+    if (serial === aiGenerationSerial) {
+      aiStatus("AI unavailable: " + error.message + " Falling back to the local model library.");
+      $("#export-status").textContent = "AI generation did not finish: " + error.message + " A local procedural blockout will be created instead.";
+    }
+    return false;
+  }
+}
+
 async function parsePrompt(raw){
 const requested=cleanAssetQuery(raw);
 if(polyPizzaKey && requested && !/\b(wider|broader|widen|tilt|angle|lean|blades?|reset|default|start over|move|shift|slide|smaller|shrink|bigger|larger|enlarge|taller|higher|deeper|thicker)\b/i.test(raw)){const loaded=await searchPolyPizza(requested,{autoLoad:true});if(loaded)return;}const p=raw.toLowerCase();let changed=false;
 if(applySelectedPrompt(raw)){return;}
+if(await generateWithAI(raw)) return;
 const requestedType=classifyPrompt(raw);
 if(requestedType!=="fan" && (requestedType!=="block" || /\b(build|make|create|generate|model)\b/.test(p))){buildGeneric(raw);return;}
 if(requestedType==="fan" && /\b(build|make|create|generate)\b/.test(p) && !/\b(wider|broader|widen|tilt|angle|lean|blades?|reset|default|start over)\b/.test(p)){window.fanBaseWide=false;window.fanTilt=0;window.fanBladeCount=3;$("#model-title").textContent="Tabletop Fan";buildFan();$("#export-status").textContent="Generated the tabletop fan sample. Select a part to refine it.";return;}
