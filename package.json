@@ -1,9 +1,15 @@
 {
   "name": "lowpoly-generator",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": false,
   "type": "module",
-  "description": "A browser-based generative low-poly art studio with reproducible seeds and SVG/PNG export.",
-  "scripts": { "test": "node --test", "check": "node --check src/app.js && node --check src/generator.js" },
+  "description": "A voice-first procedural low-poly 3D modeling studio with prompt-to-mesh generation and Blender/Maya exports.",
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check src/app.js && node --check src/mesh-engine.js && node --check src/generator.js"
+  },
+  "dependencies": {
+    "three": "0.165.0"
+  },
   "engines": { "node": ">=20" }
 }
