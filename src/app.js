@@ -3,6 +3,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { OBJExporter } from "three/addons/exporters/OBJExporter.js";
 import { STLExporter } from "three/addons/exporters/STLExporter.js";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { mergeVertices } from "three/addons/utils/BufferGeometryUtils.js";
 import { buildPromptModel, classifyPrompt, inspectMesh } from "./mesh-engine.js";
 const $=s=>document.querySelector(s), viewport=$("#viewport");
@@ -13,6 +14,8 @@ scene.add(new THREE.HemisphereLight(0xdceeff,0x34404f,2));const key=new THREE.Di
 const grid=new THREE.GridHelper(12,24,0x577184,0x263747);grid.position.y=-.015;scene.add(grid);
 const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.075;controls.target.set(0,1.55,0);controls.minDistance=2.2;controls.maxDistance=18;
 const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();let modelRoot=new THREE.Group(),selectedPart=null,currentMode="solid",showEdges=false,detail=1,vertexDots=null,edgeLines=[],recognition=null,listening=false;const parts=new Map();
+let polyPizzaKey="", polyPizzaSearchSerial=0, activeAssetCredit="";
+const gltfLoader=new GLTFLoader();
 function mat(color=0xbfc9d4){return new THREE.MeshStandardMaterial({color,roughness:.78,metalness:.06,flatShading:true});}
 function addMesh(parent,geo,name,part,color=0xbfc9d4,pos=[0,0,0],rot=[0,0,0]){const m=new THREE.Mesh(geo,mat(color));m.name=name;m.userData.part=part;m.position.set(...pos);m.rotation.set(...rot);parent.add(m);if(!parts.has(part))parts.set(part,[]);parts.get(part).push(m);return m;}
 function cyl(rt,rb,h,n){return new THREE.CylinderGeometry(rt,rb,h,n,1,false);}
@@ -70,7 +73,79 @@ function applySelectedPrompt(raw){
   if(changed){modelRoot.updateMatrixWorld(true);updateStats();rebuildOverlays();const report=inspectMesh(modelRoot);$("#mesh-status").textContent=report.checksPassed?"Geometry checks passed":"Mesh needs review";$("#export-status").textContent="Applied prompt to selected part: "+selectedPart+". "+(report.checksPassed?"Basic geometry checks passed.":"Validation found issues.")+" Review the change before exporting.";return true;}
   return false;
 }
-function parsePrompt(raw){const p=raw.toLowerCase();let changed=false;
+
+function polyStatus(message){const el=$("#poly-status");if(el)el.textContent=message;}
+function cleanAssetQuery(raw){
+  return String(raw||"").replace(/build me a low[- ]poly set up/ig,"").replace(/^(with|of|for)\s+/i,"").replace(/\b(low[- ]poly|3d model|please|make me|create me|build me|make|build|create|generate)\b/ig," ").replace(/\s+/g," ").trim();
+}
+function assetAttribution(model){
+  const title=model.Title||"Untitled model", creator=model.Creator?.Username||"Unknown creator", licence=model.Licence||"License not provided";
+  if(/CC0/i.test(licence))return \`"\${title}" by \${creator} — Poly Pizza (\${licence})\`;
+  if(/CC[- ]?BY/i.test(licence))return \`"\${title}" by \${creator} (\${model.Creator?.PURL||"https://poly.pizza"}) — Poly Pizza, \${licence}\`;
+  return \`"\${title}" by \${creator} — Poly Pizza, \${licence}. Verify reuse terms before redistributing.\`;
+}
+function renderPolyResults(models){
+  const root=$("#poly-results");root.replaceChildren();
+  if(!models.length){root.textContent="No matching GLB models found. Try a shorter search.";return;}
+  for(const model of models){
+    const card=document.createElement("article");card.className="poly-result";
+    const img=document.createElement("img");img.alt="";img.loading="lazy";img.src=model.Thumbnail||"";img.onerror=()=>{img.hidden=true;};
+    const body=document.createElement("div");body.className="poly-result-copy";
+    const title=document.createElement("strong");title.textContent=model.Title||"Untitled model";
+    const meta=document.createElement("span");meta.textContent=[model.Creator?.Username||"Unknown creator",model.Licence||"License unknown",model.TriangleCount?model.TriangleCount.toLocaleString()+" tris":""].filter(Boolean).join(" · ");
+    const load=document.createElement("button");load.className="library-button";load.textContent="Load model";load.addEventListener("click",()=>loadPolyPizzaModel(model));
+    body.append(title,meta,load);card.append(img,body);root.append(card);
+  }
+}
+async function searchPolyPizza(query,{autoLoad=false}={}){
+  const q=cleanAssetQuery(query||$("#poly-search").value);
+  if(!polyPizzaKey){polyStatus("Add your Poly Pizza API key to enable live asset search. Using procedural models for now.");return false;}
+  if(!q){polyStatus("Enter an object to search for.");return false;}
+  const serial=++polyPizzaSearchSerial;$("#poly-search").value=q;polyStatus(\`Searching Poly Pizza for “\${q}”…\`);
+  try{
+    const url="https://api.poly.pizza/v1/search/"+encodeURIComponent(q)+"?limit=8&format=glb&tricount=0-15000";
+    const response=await fetch(url,{headers:{"X-Auth-Token":polyPizzaKey,"Accept":"application/json"}});
+    if(!response.ok)throw new Error(response.status===401?"API key was rejected. Check the key and try again.":response.status===429?"Rate limit reached. Wait a moment before searching again.":\`Poly Pizza API returned HTTP \${response.status}.\`);
+    const data=await response.json(),models=Array.isArray(data.results)?data.results:[];
+    if(serial!==polyPizzaSearchSerial)return false;
+    renderPolyResults(models);
+    if(!models.length){polyStatus("No matching models found. Falling back to the procedural generator.");return false;}
+    polyStatus(\`Found \${models.length} model(s). Choose one to load it.\`);
+    if(autoLoad)return await loadPolyPizzaModel(models[0]);
+    return true;
+  }catch(error){
+    if(serial===polyPizzaSearchSerial)polyStatus(\`Poly Pizza unavailable: \${error.message} Procedural fallback is still available.\`);
+    return false;
+  }
+}
+async function loadPolyPizzaModel(model){
+  if(!model?.Download||!/^https:\/\//i.test(model.Download)){polyStatus("This model has no safe HTTPS GLB download URL.");return false;}
+  polyStatus("Loading "+(model.Title||"model")+"…");
+  try{
+    const gltf=await new Promise((resolve,reject)=>gltfLoader.load(model.Download,resolve,undefined,reject));
+    clearModel();modelRoot=gltf.scene||gltf.scenes?.[0]||new THREE.Group();modelRoot.name=model.Title||"Poly Pizza Model";
+    modelRoot.traverse(o=>{if(o.isMesh){o.userData.part=o.userData.part||o.parent?.name||"Model";if(!parts.has(o.userData.part))parts.set(o.userData.part,[]);parts.get(o.userData.part).push(o);if(o.material){const mats=Array.isArray(o.material)?o.material:[o.material];for(const m of mats){m.flatShading=true;m.needsUpdate=true;}}}});
+    const box=new THREE.Box3().setFromObject(modelRoot),size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3()),max=Math.max(size.x,size.y,size.z)||1;
+    modelRoot.position.sub(center);modelRoot.scale.setScalar(3.2/max);modelRoot.position.y-=new THREE.Box3().setFromObject(modelRoot).min.y;
+    scene.add(modelRoot);selectedPart=null;activeAssetCredit=assetAttribution(model);$("#model-title").textContent=model.Title||"Poly Pizza Model";
+    updateSelection();rebuildOverlays();updateStats();buildOutliner();frameModel();
+    $("#mesh-status").textContent="Poly Pizza asset loaded";
+    $("#export-status").textContent="Loaded from Poly Pizza. "+activeAssetCredit+" Check attribution and license before sharing exported files.";
+    window.currentModelType="poly-pizza";window.currentModelPrompt=$("#prompt").value;polyStatus("Loaded "+(model.Title||"model")+". Attribution: "+activeAssetCredit);
+    return true;
+  }catch(error){polyStatus("Couldn't load this model: "+error.message);return false;}
+}
+$("#poly-connect").addEventListener("click",()=>{
+  const key=$("#poly-api-key").value.trim();
+  if(!key){polyStatus("Paste your Poly Pizza API key first.");return;}
+  polyPizzaKey=key;$("#poly-api-key").value="";polyStatus("Key is active in this page session only. Try searching or build an object.");
+});
+$("#poly-search-button").addEventListener("click",()=>searchPolyPizza($("#poly-search").value));
+$("#poly-search").addEventListener("keydown",e=>{if(e.key==="Enter")searchPolyPizza($("#poly-search").value);});
+
+async function parsePrompt(raw){
+const requested=cleanAssetQuery(raw);
+if(polyPizzaKey && requested && !/\b(wider|broader|widen|tilt|angle|lean|blades?|reset|default|start over|move|shift|slide|smaller|shrink|bigger|larger|enlarge|taller|higher|deeper|thicker)\b/i.test(raw)){const loaded=await searchPolyPizza(requested,{autoLoad:true});if(loaded)return;}const p=raw.toLowerCase();let changed=false;
 if(applySelectedPrompt(raw)){return;}
 const requestedType=classifyPrompt(raw);
 if(requestedType!=="fan" && (requestedType!=="block" || /\b(build|make|create|generate|model)\b/.test(p))){buildGeneric(raw);return;}
