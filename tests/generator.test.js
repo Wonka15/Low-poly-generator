@@ -19,5 +19,8 @@ test("prompt engine recognizes the starter fan and common prop categories",()=>{
   assert.equal(classifyPrompt("a little robot"),"robot");
   assert.equal(classifyPrompt("make a compact car"),"car");
   assert.equal(classifyPrompt("a low-poly mushroom"),"mushroom");
+  assert.equal(classifyPrompt("build me a low poly frog"),"frog");
+  assert.equal(classifyPrompt("make a low-poly shoe"),"shoe");
+  assert.equal(classifyPrompt("a sneaker with laces"),"shoe");
   assert.equal(classifyPrompt("something I cannot identify"),"block");
 });
