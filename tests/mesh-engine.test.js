@@ -91,3 +91,32 @@ test("mug handle and car wheels use expected orientations", () => {
   assert.equal(wheels.length, 4);
   assert.ok(wheels.every(w => Math.abs(w.rotation.z - Math.PI / 2) < 1e-8));
 });
+
+test("shoe, controller, and flower use purpose-built readable geometry", () => {
+  const shoe = buildPromptModel(THREE, "a sneaker with laces", 1);
+  const shoeMeshes = [];
+  shoe.group.traverse(o => { if (o.isMesh) shoeMeshes.push(o); });
+  assert.ok(shoeMeshes.some(m => m.name === "Sculpted sneaker upper" && m.geometry.type === "ExtrudeGeometry"));
+  assert.ok(shoeMeshes.some(m => m.name === "Contoured rubber outsole" && m.geometry.type === "ExtrudeGeometry"));
+  assert.equal(shoeMeshes.filter(m => /^Lace /.test(m.name)).length, 4);
+
+  const controller = buildPromptModel(THREE, "a game controller", 1);
+  const controllerMeshes = [];
+  controller.group.traverse(o => { if (o.isMesh) controllerMeshes.push(o); });
+  assert.ok(controllerMeshes.some(m => m.name === "Ergonomic controller shell" && m.geometry.type === "ExtrudeGeometry"));
+  assert.equal(controllerMeshes.filter(m => /^Action button /.test(m.name)).length, 4);
+  assert.ok(controllerMeshes.filter(m => /^Action button /.test(m.name)).every(m => Math.abs(m.rotation.x - Math.PI / 2) < 1e-8));
+
+  const flower = buildPromptModel(THREE, "a flower", 1);
+  const flowerMeshes = [];
+  flower.group.traverse(o => { if (o.isMesh) flowerMeshes.push(o); });
+  const petals = flowerMeshes.filter(m => /^Petal /.test(m.name));
+  assert.equal(petals.length, 6);
+  assert.ok(petals.every(m => m.geometry.type === "BufferGeometry"));
+  assert.ok(petals.every(m => m.geometry.getAttribute("position").count === 6));
+  for (const [name, meshes] of [["shoe", shoeMeshes], ["controller", controllerMeshes], ["flower", flowerMeshes]]) {
+    const report = inspectMesh({ updateMatrixWorld() {}, traverse(fn) { meshes.forEach(fn); } });
+    assert.equal(report.nonFinite, 0, name + " should have finite vertices");
+    assert.equal(report.degenerate, 0, name + " should not have zero-area triangles");
+  }
+});
