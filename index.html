@@ -40,7 +40,7 @@
       <button class="mode-button" data-mode="xray" aria-pressed="false"><span>◌</span> X-ray</button>
       <button class="mode-button" data-mode="vertices" aria-pressed="false"><span>⠿</span> Vertices</button>
     </div>
-    <div class="control-row"><label for="detail">Mesh detail</label><output id="detail-value">Low-poly</output></div><input id="detail" type="range" min="0" max="2" step="1" value="1">
+    <button id="cleanup-mesh" class="cleanup-button" title="Merge duplicate vertices and remove zero-area triangles">✧ Clean up mesh</button><p class="cleanup-help">Repairs common geometry issues without changing the overall shape.</p><div class="control-row"><label for="detail">Mesh detail</label><output id="detail-value">Low-poly</output></div><input id="detail" type="range" min="0" max="2" step="1" value="1">
     <div class="check-row"><label for="show-grid">Ground grid</label><input id="show-grid" type="checkbox" checked></div>
     <div class="check-row"><label for="show-edges">Show hard edges</label><input id="show-edges" type="checkbox"></div>
     <div class="panel-note"><span>ⓘ</span><p>Generated geometry is procedural and local to this browser. Review the mesh before production use.</p></div>
@@ -48,7 +48,7 @@
   <section class="center-stage">
     <div class="viewport-top glass"><div><span class="eyebrow">03 / VIEWPORT</span><strong id="model-title">Tabletop Fan</strong><span class="viewport-subtitle">Procedural mesh · no materials baked</span></div><div class="viewport-tools"><button id="reset-view" title="Reset camera">⟲ <span>Reset</span></button><button id="focus-model" title="Frame model">⌗ <span>Frame</span></button></div></div>
     <div id="viewport" class="viewport"><div class="viewport-hint"><span class="orbit-icon">↻</span> DRAG TO ORBIT <i></i> SCROLL TO ZOOM</div><div class="axis-label axis-y">Y</div><div class="axis-label axis-x">X</div><div class="viewport-loading" id="viewport-loading">Preparing 3D viewport…</div></div>
-    <div class="viewport-bottom glass"><div class="mesh-stats"><span><i></i><b id="mesh-vertices">—</b> vertices</span><span><i></i><b id="mesh-faces">—</b> faces</span><span class="clean-status"><i></i><b id="mesh-status">Ready to inspect</b></span></div><div class="view-chips"><button class="view-chip active" data-view="perspective">Perspective</button><button class="view-chip" data-view="front">Front</button><button class="view-chip" data-view="side">Side</button></div></div>
+    <div class="viewport-bottom glass"><div class="mesh-stats"><span><i></i><b id="mesh-vertices">—</b> vertices</span><span><i></i><b id="mesh-faces">—</b> faces</span><span class="clean-status"><i></i><b id="mesh-status">Ready to inspect</b></span></div><div class="view-chips" aria-label="Camera view"><button class="view-chip active" data-view="perspective" aria-pressed="true">Perspective</button><button class="view-chip" data-view="orthographic" aria-pressed="false">Ortho</button><button class="view-chip" data-view="front" aria-pressed="false">Front</button><button class="view-chip" data-view="side" aria-pressed="false">Side</button></div></div>
   </section>
   <aside class="right-panel glass">
     <div class="panel-heading"><div><span class="eyebrow">04 / SCENE</span><h2>Outliner</h2></div><span class="scene-count" id="scene-count">5 parts</span></div>
