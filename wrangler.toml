@@ -1,0 +1,6 @@
+name = "lowpoly-studio-ai"
+main = "worker/index.js"
+compatibility_date = "2026-10-01"
+
+[vars]
+ALLOWED_ORIGIN = "https://wonka15.github.io"
