@@ -164,7 +164,7 @@ test("all catalog props have coordinated non-default color palettes", () => {
 });
 
 test("Japanese maple has pointed leaf silhouettes and autumn colors", () => {
-  const result = buildPromptModel(THREE, "a Japanese maple tree", 1);
+  const result = buildPromptModel(THREE, "a Japanese maple tree", 2);
   const leaves = [];
   result.group.traverse(o => { if (o.isMesh && o.name === "Pointed maple leaf") leaves.push(o); });
   assert.ok(leaves.length >= 18);
