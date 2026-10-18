@@ -130,9 +130,9 @@ export function buildPromptModel(THREE, prompt, detail=1) {
       ];
       add(new THREE.LatheGeometry(profile,8),"Hollow vase body","Vase",[0,0,0]);
     }
-    const baseY=type==="flower_vase"?.72:0;
+    const baseY=type==="flower_vase"?.65:0;
     for(let f=0;f<(type==="flower_vase"?3:1);f++){
-      const x=(f-1)*.24,z=(f%2)*.12;
+      const x=(f-1)*.085,z=(f%2)*.05;
       add(rod(.025,.72,5),"Stem","Stem",[x,baseY+.36,z]);
       add(new THREE.IcosahedronGeometry(.105,0),"Leaf","Leaves",[x+.1,baseY+.28,z],[0,0,-.55]);
       const center=[x,baseY+.78,z];
