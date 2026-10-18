@@ -62,3 +62,10 @@ npm test
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+
+## Poly Pizza asset library
+
+The studio can search the official Poly Pizza API and load GLB assets directly into the Three.js viewport. Create a free API key at https://poly.pizza/settings/api, paste it into the Poly Pizza Library panel, and choose **Enable library**. The key is held in page memory only and is not written to the repository or browser storage. With a key active, build prompts try the Poly Pizza library first and fall back to procedural geometry when no suitable asset is found.
+
+The public GitHub Pages prototype calls the API from the browser, so the API key is visible to the browser session and should be used only for personal testing. For a public multi-user app, route API calls through a server-side proxy that keeps the key in an environment secret. Model metadata and attribution are retained in the export status; follow each model's individual license, including attribution for CC-BY assets. Poly Pizza prohibits scraping and requires access through its published interfaces and terms.
