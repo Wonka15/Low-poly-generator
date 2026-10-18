@@ -8,6 +8,12 @@ const words = (s) => String(s || "").toLowerCase();
 export function classifyPrompt(prompt) {
   const p = words(prompt);
   const rules = [
+    ["f1_car", /\b(f1|formula\s*1|formula one|race car|racing car)\b/],
+    ["flower_vase", /\b(flower\s*(?:in|inside|with)\s*(?:a\s*)?vase|vase\s*with\s*flowers?)\b/],
+    ["controller", /\b(controller|gamepad|game controller|xbox controller|playstation controller|ps5 controller|switch controller)\b/],
+    ["lollipop", /\b(lollipop|lollypop|sucker candy)\b/],
+    ["japanese_maple", /\b(japanese maple|momiji|acer palmatum|maple tree)\b/],
+    ["flower", /\b(flower|blossom|tulip|rose|daisy|sunflower)\b/],
     ["frog", /\b(frog|toad|tree frog|bullfrog)\b/],
     ["shoe", /\b(shoe|sneaker|boot|trainer|footwear|low[- ]top)\b/],
     ["fan", /\b(tabletop|desk|electric|standing)?\s*fan\b/],
@@ -21,7 +27,7 @@ export function classifyPrompt(prompt) {
     ["tree", /\b(tree|pine|spruce|fir)\b/],
     ["lamp", /\b(lamp|desk light|table light)\b/],
     ["robot", /\b(robot|android|droid)\b/],
-    ["car", /\b(car|automobile|sedan|hatchback)\b/],
+    ["car", /\b(car|automobile|sedan|hatchback|vehicle)\b/],
     ["sofa", /\b(sofa|couch|loveseat)\b/],
     ["speaker", /\b(speaker|loudspeaker|subwoofer)\b/],
     ["crate", /\b(crate|box|chest|storage box)\b/],
@@ -39,7 +45,7 @@ function readCount(p, nouns, fallback, min=1, max=16) {
 }
 export function buildPromptModel(THREE, prompt, detail=1) {
   const p=words(prompt), type=classifyPrompt(p), segments=[6,10,14][clamp(Number(detail)||0,0,2)];
-  const group=new THREE.Group(); group.name=({fan:"Tabletop Fan",chair:"Chair",table:"Table",stool:"Stool",mug:"Mug",bottle:"Bottle",vase:"Low-poly Vase",house:"Small House",tree:"Low-poly Tree",lamp:"Desk Lamp",robot:"Robot",car:"Compact Car",sofa:"Sofa",speaker:"Speaker",crate:"Crate",mushroom:"Mushroom",rock:"Low-poly Rock",gear:"Gear",frog:"Low-poly Frog",shoe:"Low-poly Shoe",block:"Primitive Blockout"})[type];
+  const group=new THREE.Group(); group.name=({f1_car:"Formula 1 Race Car",flower_vase:"Flower in a Vase",controller:"Game Controller",lollipop:"Low-poly Lollipop",japanese_maple:"Japanese Maple Tree",flower:"Low-poly Flower",fan:"Tabletop Fan",chair:"Chair",table:"Table",stool:"Stool",mug:"Mug",bottle:"Bottle",vase:"Low-poly Vase",house:"Small House",tree:"Low-poly Tree",lamp:"Desk Lamp",robot:"Robot",car:"Compact Car",sofa:"Sofa",speaker:"Speaker",crate:"Crate",mushroom:"Mushroom",rock:"Low-poly Rock",gear:"Gear",frog:"Low-poly Frog",shoe:"Low-poly Shoe",block:"Primitive Blockout"})[type];
   const partMap=new Map(); let serial=0;
   const material=()=>new THREE.MeshStandardMaterial({color:0xbfc9d4,roughness:.82,metalness:0,flatShading:true});
   function add(geo,name,part,pos=[0,0,0],rot=[0,0,0]) {
@@ -68,6 +74,19 @@ export function buildPromptModel(THREE, prompt, detail=1) {
     const inner=add(new THREE.TorusGeometry(.63,.018,4,n*2),"Inner safety ring","Cage",[0,0,.09]);head.add(inner);
     for(let i=0;i<12;i++){const a=i*Math.PI/6;const s=add(rod(.012,.76,5),"Cage spoke","Cage",[Math.sin(a)*.38,Math.cos(a)*.38,.08]);s.rotation.z=-a;head.add(s);}
     for(let i=0;i<blades;i++){const a=i*Math.PI*2/blades;const b=add(box(.19,.62,.045),"Blade "+(i+1),"Blades",[Math.sin(a)*.22,Math.cos(a)*.22,.15]);b.rotation.z=-a+.18;head.add(b);}
+  } else if(type==="lollipop") {
+    add(cyl(.045,.045,.58,8),"Stick","Stick",[0,.3,0]);
+    add(new THREE.IcosahedronGeometry(.34,1),"Candy","Candy",[0,.78,0]);
+    add(cyl(.055,.055,.1,8),"Candy collar","Stick",[0,.57,0]);
+  } else if(type==="controller") {
+    const shell=add(new THREE.IcosahedronGeometry(.57,1),"Controller shell","Shell",[0,.42,0]);shell.scale.set(1.35,.48,.72);
+    add(cyl(.095,.095,.07,8),"Left thumbstick","Thumbsticks",[-.32,.65,.12]);
+    add(cyl(.095,.095,.07,8),"Right thumbstick","Thumbsticks",[.22,.65,-.02]);
+    add(box(.29,.055,.055),"D-pad horizontal","D-pad",[-.34,.65,-.12]);
+    add(box(.055,.055,.29),"D-pad vertical","D-pad",[-.34,.65,-.12]);
+    for(const [i,pos] of [[0,[.35,.65,.17]],[1,[.45,.65,.06]],[2,[.25,.65,.06]],[3,[.35,.65,-.05]]])add(new THREE.IcosahedronGeometry(.055,0),"Action button "+(i+1),"Buttons",pos);
+    add(box(.16,.035,.07),"Menu button","Buttons",[0,.65,-.22]);
+    add(box(.12,.045,.09),"Logo button","Buttons",[0,.66,.08]);
   } else if(type==="chair" || type==="stool") {
     const h=type==="stool"?.72:.82, seatY=h;
     add(box(.95*smaller,.13,.9),"Seat","Seat",[0,seatY,0]);
@@ -86,10 +105,30 @@ export function buildPromptModel(THREE, prompt, detail=1) {
     add(cyl(base*.48,base*.7,.22,segments),"Shoulder","Shoulder",[0,bodyH+.09,0]);
     add(cyl(type==="bottle"?.12:.22,type==="bottle"?.12:.22,.34,segments),"Neck","Neck",[0,bodyH+.34,0]);
     add(cyl(type==="bottle"?.14:.24,type==="bottle"?.14:.24,.06,segments),"Rim","Rim",[0,bodyH+.53,0]);
+  } else if(type==="flower" || type==="flower_vase") {
+    if(type==="flower_vase"){
+      add(cyl(.3,.4,.55,8),"Vase body","Vase",[0,.28,0]);
+      add(cyl(.19,.22,.16,8),"Vase neck","Vase",[0,.62,0]);
+      add(cyl(.23,.23,.06,8),"Vase rim","Vase",[0,.72,0]);
+    }
+    const baseY=type==="flower_vase"?.72:0;
+    for(let f=0;f<(type==="flower_vase"?3:1);f++){
+      const x=(f-1)*.24,z=(f%2)*.12;
+      add(rod(.025,.72,5),"Stem","Stem",[x,baseY+.36,z]);
+      add(new THREE.IcosahedronGeometry(.105,0),"Leaf","Leaves",[x+.1,baseY+.28,z],[0,0,-.55]);
+      const center=[x,baseY+.78,z];
+      add(new THREE.IcosahedronGeometry(.105,0),"Flower center","Flower center",center);
+      for(let i=0;i<6;i++){const a=i*Math.PI/3;const petal=add(new THREE.IcosahedronGeometry(.105,0),"Petal","Petals",[x+Math.cos(a)*.16,baseY+.79+Math.sin(a)*.16,z]);petal.scale.set(1,.8,1);}
+    }
   } else if(type==="house") {
     add(box(1.5,1.05,1.25),"House body","Body",[0,.55,0]);
     const roof=new THREE.Mesh(new THREE.ConeGeometry(1.12,.72,4),material());roof.name="Roof";roof.userData.part="Roof";roof.position.set(0,1.42,0);roof.rotation.y=Math.PI/4;group.add(roof);if(!partMap.has("Roof"))partMap.set("Roof",[]);partMap.get("Roof").push(roof);
     add(box(.28,.58,.06),"Door","Door",[0,.3,.66]);for(const x of [-.43,.43])add(box(.24,.24,.06),"Window","Windows",[x,.72,.66]);
+  } else if(type==="japanese_maple") {
+    add(cyl(.11,.2,1.05,7),"Trunk","Trunk",[0,.52,0]);
+    for(const s of [-1,1]){const branch=add(rod(.045,.48,5),"Branch","Branches",[s*.22,.94,0]);branch.rotation.z=s*.62;}
+    const clusters=[[-.42,1.35,0],[0,1.52,.02],[.42,1.35,0],[-.25,1.72,-.06],[.28,1.73,.02],[0,1.88,0]];
+    clusters.forEach((pos,i)=>{const leaf=add(new THREE.IcosahedronGeometry(.32,i%2),"Maple foliage cluster","Canopy",pos);leaf.scale.set(1.15,.72,.92);});
   } else if(type==="tree") {
     add(cyl(.12,.18,.8,6),"Trunk","Trunk",[0,.4,0]);add(cone(.68,.9,7),"Lower foliage","Foliage",[0,1.05,0]);add(cone(.5,.78,7),"Upper foliage","Foliage",[0,1.65,0]);
   } else if(type==="lamp") {
@@ -98,6 +137,18 @@ export function buildPromptModel(THREE, prompt, detail=1) {
     add(box(.55,.62,.32),"Torso","Torso",[0,.72,0]);add(box(.42,.38,.35),"Head","Head",[0,1.25,0]);
     for(const s of [-1,1]){add(rod(.075,.52,6),"Arm","Arms",[s*.4,.76,0],[0,0,s*.12]);add(box(.15,.48,.16),"Leg","Legs",[s*.18,.18,0]);add(box(.16,.12,.24),"Foot","Feet",[s*.18,.04,.06]);}
     for(const x of [-.11,.11])add(sphere(.045,8),"Eye","Face",[x,1.3,.19]);
+  } else if(type==="f1_car") {
+    add(box(1.8,.18,.68),"Low chassis","Body",[0,.3,0]);
+    add(box(.48,.18,.42),"Cockpit","Cockpit",[0,.48,-.03]);
+    add(new THREE.IcosahedronGeometry(.17,1),"Driver helmet","Cockpit",[0,.62,.02]);
+    add(box(.32,.06,1.08),"Front wing","Wings",[0,.2,.62]);
+    add(box(.34,.07,.98),"Rear wing","Wings",[0,.45,-.72]);
+    add(box(.2,.12,.65),"Engine cover","Body",[0,.46,-.35]);
+    for(const x of [-.63,.63])for(const z of [-.48,.48]){
+      add(new THREE.CylinderGeometry(.2,.2,.16,10),"Racing tire","Wheels",[x,.2,z],[0,0,Math.PI/2]);
+      add(new THREE.CylinderGeometry(.105,.105,.17,10),"Wheel hub","Wheels",[x,.2,z],[0,0,Math.PI/2]);
+    }
+    add(box(.12,.1,.34),"Front nose","Body",[0,.25,.43]);
   } else if(type==="car") {
     add(box(1.65,.42,.82),"Chassis","Body",[0,.38,0]);add(box(.9,.38,.7),"Cabin","Cabin",[0,.76,-.03]);
     for(const x of [-.56,.56])for(const z of [-.44,.44])add(new THREE.CylinderGeometry(.2,.2,.12,10),"Wheel","Wheels",[x,.22,z],[Math.PI/2,0,0]);
