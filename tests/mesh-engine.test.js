@@ -87,7 +87,7 @@ test("mug handle and car wheels use expected orientations", () => {
   assert.ok(Math.abs(handle[0].rotation.x) < 1e-8, "mug handle should face forward");
   const car = buildPromptModel(THREE, "a compact car", 1);
   const wheels = [];
-  car.group.traverse(o => { if (o.isMesh && o.name === "Wheel") wheels.push(o); });
+  car.group.traverse(o => { if (o.isMesh && (o.name === "Road tyre" || o.name === "Wheel")) wheels.push(o); });
   assert.equal(wheels.length, 4);
   assert.ok(wheels.every(w => Math.abs(w.rotation.z - Math.PI / 2) < 1e-8));
 });
@@ -119,4 +119,26 @@ test("shoe, controller, and flower use purpose-built readable geometry", () => {
     assert.equal(report.nonFinite, 0, name + " should have finite vertices");
     assert.equal(report.degenerate, 0, name + " should not have zero-area triangles");
   }
+});
+
+test("hero props have distinctive silhouettes and materials", () => {
+  const candy = buildPromptModel(THREE, "a lollipop", 1);
+  const candyParts = []; candy.group.traverse(o => { if (o.isMesh) candyParts.push(o); });
+  const disc = candyParts.find(m => m.name === "Flat candy disc");
+  assert.ok(disc && disc.geometry.type === "CylinderGeometry");
+  assert.ok(Math.abs(disc.rotation.x - Math.PI / 2) < 1e-8, "candy face should point toward the viewer");
+  assert.notEqual(disc.material.color.getHex(), 0xbfc9d4, "candy should have a bright material");
+
+  const f1 = buildPromptModel(THREE, "an F1 race car", 1);
+  const f1Parts = []; f1.group.traverse(o => { if (o.isMesh) f1Parts.push(o); });
+  for (const name of ["Tapered nose", "Front wing main plane", "Rear wing plane", "Wide racing tyre", "Cockpit rim"]) {
+    assert.ok(f1Parts.some(m => m.name === name), "F1 car should include " + name);
+  }
+  assert.equal(f1Parts.filter(m => m.name === "Wide racing tyre").length, 4);
+  assert.notEqual(f1Parts.find(m => m.name === "Carbon monocoque")?.material.color.getHex(), 0xbfc9d4);
+
+  const car = buildPromptModel(THREE, "a compact car", 1);
+  const carParts = []; car.group.traverse(o => { if (o.isMesh) carParts.push(o); });
+  assert.ok(carParts.some(m => m.name === "Sloped passenger cabin"));
+  assert.equal(carParts.filter(m => m.name === "Road tyre").length, 4);
 });
