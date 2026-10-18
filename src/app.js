@@ -356,6 +356,12 @@ $("#ai-save-endpoint")?.addEventListener("click", () => {
   $("#ai-endpoint").value = endpoint;
   aiStatus("AI backend URL saved in this browser. Try building any object.");
 });
+$("#ai-clear-endpoint")?.addEventListener("click", () => {
+  try { localStorage.removeItem(AI_ENDPOINT_STORAGE_KEY); } catch {}
+  if ($("#ai-endpoint")) $("#ai-endpoint").value = "";
+  aiStatus("AI backend disconnected. Builds will use the local procedural library.");
+});
+if (readAIEndpoint()) aiStatus("AI backend URL loaded. AI generation is ready.");
 async function generateWithAI(raw) {
   const endpoint = readAIEndpoint();
   if (!endpoint) return false;
