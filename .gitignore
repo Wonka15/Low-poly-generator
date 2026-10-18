@@ -1,3 +1,9 @@
 node_modules/
 .DS_Store
 *.log
+
+# Local secrets for the optional Cloudflare AI Worker
+.dev.vars*
+.env
+.env.*
+!.env.example
