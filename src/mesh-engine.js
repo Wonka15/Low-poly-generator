@@ -47,9 +47,16 @@ export function buildPromptModel(THREE, prompt, detail=1) {
   const p=words(prompt), type=classifyPrompt(p), segments=[6,10,14][clamp(Number(detail)||0,0,2)];
   const group=new THREE.Group(); group.name=({f1_car:"Formula 1 Race Car",flower_vase:"Flower in a Vase",controller:"Game Controller",lollipop:"Low-poly Lollipop",japanese_maple:"Japanese Maple Tree",flower:"Low-poly Flower",fan:"Tabletop Fan",chair:"Chair",table:"Table",stool:"Stool",mug:"Mug",bottle:"Bottle",vase:"Low-poly Vase",house:"Small House",tree:"Low-poly Tree",lamp:"Desk Lamp",robot:"Robot",car:"Compact Car",sofa:"Sofa",speaker:"Speaker",crate:"Crate",mushroom:"Mushroom",rock:"Low-poly Rock",gear:"Gear",frog:"Low-poly Frog",shoe:"Low-poly Shoe",block:"Primitive Blockout"})[type];
   const partMap=new Map(); let serial=0;
-  const material=()=>new THREE.MeshStandardMaterial({color:0xbfc9d4,roughness:.82,metalness:0,flatShading:true});
+  const material=(part)=>{
+    const palette=type==="f1_car"?{Body:0xd62828,Nose:0xd62828,"Front wing":0x24262b,"Rear wing":0x24262b,Wheels:0x17191d,Cockpit:0x24262b}:
+      type==="car"?{Body:0x2869a8,Cabin:0x3c91c9,Bumpers:0x20242a,Wheels:0x17191d}:
+      type==="controller"?{Shell:0x30343b,Thumbsticks:0x16191e,"D-pad":0x111318,Buttons:0xd7dce2}:
+      type==="shoe"?{Sole:0xe6e7e8,Upper:0x315a86,Toe:0x315a86,Tongue:0x4b79a6,Laces:0xf1f2f3,Opening:0x202a35,Trim:0xf1f2f3,Heel:0x315a86}:
+      type==="lollipop"?{Candy:0xe84268,Stick:0xf0d8b0}:{};
+    return new THREE.MeshStandardMaterial({color:palette[part]??0xbfc9d4,roughness:.82,metalness:0,flatShading:true});
+  };
   function add(geo,name,part,pos=[0,0,0],rot=[0,0,0]) {
-    const mesh=new THREE.Mesh(geo,material()); mesh.name=name;mesh.userData.part=part;
+    const mesh=new THREE.Mesh(geo,material(part)); mesh.name=name;mesh.userData.part=part;
     mesh.position.set(...pos);mesh.rotation.set(...rot);mesh.castShadow=false;mesh.receiveShadow=false;group.add(mesh);
     if(!partMap.has(part))partMap.set(part,[]);partMap.get(part).push(mesh);serial++;return mesh;
   }
