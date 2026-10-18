@@ -142,3 +142,41 @@ test("hero props have distinctive silhouettes and materials", () => {
   assert.ok(carParts.some(m => m.name === "Sloped passenger cabin"));
   assert.equal(carParts.filter(m => m.name === "Road tyre").length, 4);
 });
+
+test("all catalog props have coordinated non-default color palettes", () => {
+  const catalog = [
+    ["a lollipop", "Candy"], ["a compact car", "Body"], ["an F1 race car", "Body"],
+    ["a game controller", "Shell"], ["a flower", "Petals"], ["a flower in a vase", "Vase"],
+    ["a small house", "Body"], ["a Japanese maple tree", "Canopy red"], ["a low-poly frog", "Body"],
+    ["a sneaker", "Upper"], ["a tabletop fan", "Blades"], ["a chair", "Seat"],
+    ["a table", "Top"], ["a stool", "Seat"], ["a mug", "Body"], ["a bottle", "Body"],
+    ["a vase", "Body"], ["a tree", "Foliage"], ["a lamp", "Shade"], ["a robot", "Torso"],
+    ["a sofa", "Base"], ["a speaker", "Cabinet"], ["a crate", "Body"], ["a mushroom", "Cap"],
+    ["a rock", "Rock"], ["a gear", "Body"]
+  ];
+  for (const [prompt, part] of catalog) {
+    const result = buildPromptModel(THREE, prompt, 1);
+    const meshes = [];
+    result.group.traverse(o => { if (o.isMesh && o.userData.part === part) meshes.push(o); });
+    assert.ok(meshes.length > 0, prompt + " should have colored " + part);
+    assert.ok(meshes.some(m => m.material.color.getHex() !== 0xbfc9d4), prompt + " should not be default grey");
+  }
+});
+
+test("Japanese maple has pointed leaf silhouettes and autumn colors", () => {
+  const result = buildPromptModel(THREE, "a Japanese maple tree", 1);
+  const leaves = [];
+  result.group.traverse(o => { if (o.isMesh && o.name === "Pointed maple leaf") leaves.push(o); });
+  assert.ok(leaves.length >= 18);
+  assert.ok(leaves.every(m => m.geometry.type === "ExtrudeGeometry"));
+  assert.ok(new Set(leaves.map(m => m.material.color.getHex())).size >= 3);
+});
+
+test("sneaker has contrasting panels and crossed laces", () => {
+  const result = buildPromptModel(THREE, "a sneaker with laces", 1);
+  const meshes = [];
+  result.group.traverse(o => { if (o.isMesh) meshes.push(o); });
+  assert.equal(meshes.filter(m => /^Lace /.test(m.name)).length, 8);
+  assert.ok(meshes.some(m => m.name === "Rounded contrasting toe cap" && m.material.color.getHex() !== meshes.find(x => x.name === "Sculpted sneaker upper").material.color.getHex()));
+  assert.ok(meshes.filter(m => /Side stripe/.test(m.name)).length >= 4);
+});

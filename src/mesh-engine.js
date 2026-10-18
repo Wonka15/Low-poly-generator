@@ -47,14 +47,38 @@ export function buildPromptModel(THREE, prompt, detail=1) {
   const p=words(prompt), type=classifyPrompt(p), segments=[6,10,14][clamp(Number(detail)||0,0,2)];
   const group=new THREE.Group(); group.name=({f1_car:"Formula 1 Race Car",flower_vase:"Flower in a Vase",controller:"Game Controller",lollipop:"Low-poly Lollipop",japanese_maple:"Japanese Maple Tree",flower:"Low-poly Flower",fan:"Tabletop Fan",chair:"Chair",table:"Table",stool:"Stool",mug:"Mug",bottle:"Bottle",vase:"Low-poly Vase",house:"Small House",tree:"Low-poly Tree",lamp:"Desk Lamp",robot:"Robot",car:"Compact Car",sofa:"Sofa",speaker:"Speaker",crate:"Crate",mushroom:"Mushroom",rock:"Low-poly Rock",gear:"Gear",frog:"Low-poly Frog",shoe:"Low-poly Shoe",block:"Primitive Blockout"})[type];
   const partMap=new Map(); let serial=0;
-  const material=(part)=>{
-    const palette=type==="f1_car"?{Body:0xd62828,Nose:0xd62828,"Front wing":0x24262b,"Rear wing":0x24262b,Wheels:0x17191d,Cockpit:0x24262b}:
-      type==="car"?{Body:0x2869a8,Cabin:0x3c91c9,Bumpers:0x20242a,Wheels:0x17191d}:
-      type==="controller"?{Shell:0x30343b,Thumbsticks:0x16191e,"D-pad":0x111318,Buttons:0xd7dce2}:
-      type==="shoe"?{Sole:0xe6e7e8,Upper:0x315a86,Toe:0x315a86,Tongue:0x4b79a6,Laces:0xf1f2f3,Opening:0x202a35,Trim:0xf1f2f3,Heel:0x315a86}:
-      type==="lollipop"?{Candy:0xe84268,Stick:0xf0d8b0}:{};
-    return new THREE.MeshStandardMaterial({color:palette[part]??0xbfc9d4,roughness:.82,metalness:0,flatShading:true});
+  // Every built-in gets an intentional, coordinated palette instead of default grey.
+  const palettes={
+    f1_car:{Body:0xd62828,Nose:0xe63946,"Front wing":0x252932,"Rear wing":0x252932,Wheels:0x17191d,Cockpit:0x252932},
+    car:{Body:0x2869a8,Cabin:0x77c9ee,Bumpers:0x252a32,Wheels:0x17191d},
+    controller:{Shell:0x30343b,Thumbsticks:0x16191e,"D-pad":0x111318,Buttons:0xf0c75e},
+    shoe:{Sole:0xf0eee8,Upper:0x28628a,Toe:0xf0eee8,Tongue:0x4f91b5,Laces:0xfaf7f0,Opening:0x202a35,Trim:0xe8b84a,Heel:0xf0eee8},
+    lollipop:{Candy:0xf04478,Stick:0xf2d5a0},
+    house:{Body:0xf1d4a7,Roof:0xc6533b,Door:0x70452e,Windows:0x76c8e8},
+    japanese_maple:{Trunk:0x65412f,Branches:0x76503a,"Canopy red":0xc73548,"Canopy orange":0xe66a3c,"Canopy gold":0xf0a84d,Veins:0x9c2939},
+    tree:{Trunk:0x755037,Foliage:0x4e8b49},
+    flower:{Stem:0x39834b,Leaves:0x48a65b,"Flower center":0xf5c542,Petals:0xf06a9b},
+    flower_vase:{Vase:0x3caaa5,Stem:0x39834b,Leaves:0x48a65b,"Flower center":0xf5c542,Petals:0xf06a9b},
+    frog:{Body:0x63ad54,Head:0x79c967,Eyes:0xf5e8c8,Pupils:0x20262b,Legs:0x4b9845,Feet:0x3e823d,Face:0x3d6637},
+    fan:{Base:0x4c5965,Stand:0x75838d,Motor:0x8c9da8,Cage:0x45515a,Blades:0x71b7d1},
+    chair:{Seat:0xc38b55,Legs:0x795337,Backrest:0x9b6c43,Arms:0x795337},
+    stool:{Seat:0xc38b55,Legs:0x795337,Top:0xc38b55},
+    table:{Top:0xc38b55,Legs:0x795337},
+    mug:{Body:0xe5edf4,Handle:0x6aa7d6},
+    bottle:{Body:0x66b7b0,Shoulder:0x66b7b0,Neck:0x66b7b0,Rim:0xe3f3ef},
+    vase:{Body:0x68b8b0,Shoulder:0x68b8b0,Neck:0x68b8b0,Rim:0xf0d8a6},
+    lamp:{Base:0x4b6579,Stem:0x4b6579,Shade:0xf4c95d},
+    robot:{Torso:0x5d8fc4,Head:0xa9d2e8,Arms:0x5d8fc4,Legs:0x47586a,Feet:0x343f4c,Face:0x242d36},
+    sofa:{Base:0x477a9d,Back:0x477a9d,Arms:0x376782,Cushions:0x79adc7},
+    speaker:{Cabinet:0x343b45,"Speaker cone":0x667582,Tweeter:0xe6b85c},
+    crate:{Body:0xb9824c,Rails:0x79502f},
+    mushroom:{Stem:0xf1e4cc,Cap:0xd8584b},
+    rock:{Rock:0x8b969b},
+    gear:{Body:0x8b9aa5,Axle:0x3e4852,Teeth:0xb6c1c8},
+    block:{Body:0x7d9bc2}
   };
+  const palette=palettes[type]||palettes.block;
+  const material=(part)=>new THREE.MeshStandardMaterial({color:palette[part]??palette.Body??0xbfc9d4,roughness:.82,metalness:0,flatShading:true});
   function add(geo,name,part,pos=[0,0,0],rot=[0,0,0]) {
     const mesh=new THREE.Mesh(geo,material(part)); mesh.name=name;mesh.userData.part=part;
     mesh.position.set(...pos);mesh.rotation.set(...rot);mesh.castShadow=false;mesh.receiveShadow=false;group.add(mesh);
@@ -192,10 +216,34 @@ export function buildPromptModel(THREE, prompt, detail=1) {
     const roof=add(roofGeometry,"Roof","Roof",[0,1.06,0]);roof.material.side=THREE.DoubleSide;
     add(box(.28,.58,.06),"Door","Door",[0,.3,.66]);for(const x of [-.43,.43])add(box(.24,.24,.06),"Window","Windows",[x,.72,.66]);
   } else if(type==="japanese_maple") {
-    add(cyl(.11,.2,1.05,7),"Trunk","Trunk",[0,.52,0]);
-    for(const s of [-1,1]){const branch=add(rod(.045,.48,5),"Branch","Branches",[s*.22,.94,0]);branch.rotation.z=s*.62;}
-    const clusters=[[-.42,1.35,0],[0,1.52,.02],[.42,1.35,0],[-.25,1.72,-.06],[.28,1.73,.02],[0,1.88,0]];
-    clusters.forEach((pos,i)=>{const leaf=add(new THREE.IcosahedronGeometry(.32,i%2),"Maple foliage cluster","Canopy",pos);leaf.scale.set(1.15,.72,.92);});
+    // A branching, layered momiji canopy with recognizable pointed palmate leaves
+    // and a Japanese-maple autumn palette (crimson, vermilion and golden orange).
+    add(cyl(.105,.19,1.12,7),"Tapered maple trunk","Trunk",[0,.56,0]);
+    for(const s of [-1,1]){
+      const branch=add(rod(.035,.57,5),"Angled maple branch","Branches",[s*.23,.92,0]);
+      branch.rotation.z=-s*.58;
+    }
+    const leafShape=new THREE.Shape();
+    leafShape.moveTo(0,0);leafShape.lineTo(-.075,.07);leafShape.lineTo(-.20,.085);
+    leafShape.lineTo(-.155,.17);leafShape.lineTo(-.225,.205);leafShape.lineTo(-.12,.245);
+    leafShape.lineTo(-.105,.355);leafShape.lineTo(0,.285);leafShape.lineTo(.105,.355);
+    leafShape.lineTo(.12,.245);leafShape.lineTo(.225,.205);leafShape.lineTo(.155,.17);
+    leafShape.lineTo(.20,.085);leafShape.lineTo(.075,.07);leafShape.closePath();
+    const mapleLeafGeometry=new THREE.ExtrudeGeometry(leafShape,{depth:.025,bevelEnabled:false,steps:1,curveSegments:1});
+    const canopyClusters=[
+      [-.40,1.35,-.02],[-.18,1.48,.10],[.12,1.48,.02],[.40,1.36,-.02],
+      [-.31,1.68,.03],[0,1.72,-.08],[.31,1.68,.04],[-.13,1.94,0],[.16,1.91,.02]
+    ];
+    canopyClusters.forEach((pos,i)=>{
+      const colors=["Canopy red","Canopy orange","Canopy gold"];
+      const count=i%3===1?3:2;
+      for(let j=0;j<count;j++){
+        const leaf=add(mapleLeafGeometry,"Pointed maple leaf",colors[(i+j)%colors.length],
+          [pos[0]+(j-(count-1)/2)*.10,pos[1]+(j%2)*.045,pos[2]+(j%2)*.07],
+          [0,(i%2?1:-1)*.28+j*.42,(j-1)*.12]);
+        leaf.scale.set(1+(j%2)*.12,1+(i%3)*.04,1);
+      }
+    });
   } else if(type==="tree") {
     add(cyl(.12,.18,.8,6),"Trunk","Trunk",[0,.4,0]);add(cone(.68,.9,7),"Lower foliage","Foliage",[0,1.05,0]);add(cone(.5,.78,7),"Upper foliage","Foliage",[0,1.65,0]);
   } else if(type==="lamp") {
@@ -295,19 +343,26 @@ export function buildPromptModel(THREE, prompt, detail=1) {
     upperGeo.rotateY(-Math.PI/2);upperGeo.translate(-.215,0,0);
     add(upperGeo,"Sculpted sneaker upper","Upper",[0,.10,0]);
     // Rounded low-poly toe overlay softens the front profile while staying faceted.
-    const toeCap=add(new THREE.SphereGeometry(.25,8,5),"Rounded toe cap","Toe",[0,.32,.48]);
+    const toeCap=add(new THREE.SphereGeometry(.25,8,5),"Rounded contrasting toe cap","Toe",[0,.32,.48]);
     toeCap.scale.set(1.12,.62,1.05);
-    add(box(.34,.16,.10),"Heel counter","Heel",[0,.39,-.43]);
-    // A raised tongue and paired lace crossings make the top instantly legible.
+    add(box(.34,.16,.10),"Structured heel counter","Heel",[0,.39,-.43]);
+    // Contrast foxing gives the sole a clean sneaker-like layered edge.
+    add(box(.48,.025,.055),"Sole accent stripe","Trim",[0,.19,-.01]);
+    // Raised tongue, dark collar opening and crossed laces make the top readable.
     add(box(.22,.045,.32),"Padded tongue","Tongue",[0,.56,.015]);
     add(box(.31,.035,.16),"Heel collar","Opening",[0,.48,-.38]);
     for(let i=0;i<4;i++){
-      const z=.16-i*.105;
-      const lace=add(box(.30,.018,.035),"Lace "+(i+1),"Laces",[0,.585,z]);
-      lace.rotation.y=i%2?-.13:.13;
+      const z=.16-i*.085;
+      for(const side of [-1,1]){
+        const lace=add(box(.17,.018,.028),"Lace "+(i+1),"Laces",[side*.055,.60,z]);
+        lace.rotation.y=side===-1?.48:-.48;
+      }
     }
-    for(const s of [-1,1]){
-      add(box(.035,.025,.42),"Stitching strip","Trim",[s*.222,.35,-.015]);
+    // Two contrasting angled overlays act as a simple low-poly side stripe/logo.
+    for(const side of [-1,1]){
+      const stripeA=add(box(.025,.065,.25),"Side stripe upper","Trim",[side*.232,.355,.02],[.22,0,.15]);
+      const stripeB=add(box(.025,.055,.22),"Side stripe lower","Trim",[side*.232,.325,.19],[-.18,0,-.18]);
+      add(box(.025,.035,.23),"Stitching strip","Trim",[side*.232,.275,-.12]);
     }
     add(box(.30,.06,.075),"Heel pull tab","Heel",[0,.57,-.53]);
   } else if(type==="gear") {
