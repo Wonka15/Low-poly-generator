@@ -44,15 +44,16 @@ renderer.domElement.addEventListener("pointerdown",e=>{const r=renderer.domEleme
 function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera);}animate();
 function buildGeneric(raw){
   clearModel();
-  const result=buildPromptModel(THREE,raw,detail);
+  const normalizedPrompt = /\bbuild me a low[- ]poly set up\b/i.test(raw) ? raw : `Build me a low poly set up with ${raw}`;
+  const result=buildPromptModel(THREE,normalizedPrompt,detail);
   modelRoot=result.group;modelRoot.name=result.name;parts.clear();
   modelRoot.traverse(o=>{if(o.isMesh){const part=o.userData.part||"Body";if(!parts.has(part))parts.set(part,[]);parts.get(part).push(o);}});
   scene.add(modelRoot);selectedPart=null;$("#model-title").textContent=result.name;
   updateSelection();rebuildOverlays();updateStats();buildOutliner();frameModel();
   $("#mesh-status").textContent=result.report.checksPassed?"Mesh checks passed · "+result.report.degenerate+" degenerate faces":"Mesh needs review";
-  const note=result.recognized?"Generated "+result.name.toLowerCase()+" from the prompt. "+result.report.meshes+" named mesh objects; "+result.report.triangles+" triangles.":"I couldn't identify that object yet, so I made a starter blockout. Try a chair, table, mug, bottle, house, tree, lamp, robot, car, sofa, speaker, crate, mushroom, rock, gear, or fan.";
+  const note=result.recognized?"Generated "+result.name.toLowerCase()+" from the prompt. "+result.report.meshes+" named mesh objects; "+result.report.triangles+" triangles.":"I couldn't identify that object yet, so I made a starter blockout. Try a lollipop, car, F1 car, controller, flower, flower in a vase, house, Japanese maple tree, frog, shoe, or fan.";
   $("#export-status").textContent=note+" Checks cover finite coordinates and zero-area triangles, not watertightness or self-intersections.";
-  window.currentModelType=result.type;window.currentModelPrompt=raw;
+  window.currentModelType=result.type;window.currentModelPrompt=normalizedPrompt;
 }
 function applySelectedPrompt(raw){
   if(!selectedPart)return false;
