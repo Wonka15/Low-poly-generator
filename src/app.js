@@ -150,6 +150,100 @@ function applySelectedPrompt(raw){
   return false;
 }
 
+// Poly Haven public-library adapter. No key is required; keep imported assets unmodified.
+let polyHavenSearchSerial=0;
+function havenStatus(message){const el=$("#haven-status");if(el)el.textContent=message;}
+function havenAssetUrl(files){
+  const matches=[];
+  const walk=(node,path=[])=>{
+    if(!node||typeof node!=="object")return;
+    for(const [key,value] of Object.entries(node)){
+      const next=[...path,key];
+      if(value&&typeof value==="object"){
+        const url=typeof value.url==="string"?value.url:typeof value.download_url==="string"?value.download_url:"";
+        const ext=(url+" "+next.join("/")).toLowerCase();
+        if(url&&/^https:\/\//i.test(url)&&/\.(glb|gltf)(?:[?#]|$)/i.test(ext))matches.push({url,glb:/\.glb(?:[?#]|$)/i.test(ext)});
+        walk(value,next);
+      }else if(typeof value==="string"&&/^https:\/\//i.test(value)&&/\.(glb|gltf)(?:[?#]|$)/i.test(value)){
+        matches.push({url:value,glb:/\.glb(?:[?#]|$)/i.test(value)});
+      }
+    }
+  };
+  walk(files);
+  matches.sort((a,b)=>Number(b.glb)-Number(a.glb));
+  return matches[0]?.url||"";
+}
+function renderPolyHavenResults(results){
+  const root=$("#haven-results");root.replaceChildren();
+  if(!results.length){root.textContent="No model results found. Try another search.";return;}
+  for(const asset of results){
+    const card=document.createElement("article");card.className="poly-result";
+    const img=document.createElement("img");img.alt="";img.loading="lazy";img.src=asset.thumbnail_url||"";img.onerror=()=>{img.hidden=true;};
+    const body=document.createElement("div");body.className="poly-result-copy";
+    const title=document.createElement("strong");title.textContent=asset.name||asset.slug||"Poly Haven model";
+    const meta=document.createElement("span");meta.textContent=[asset.category||"3D model","CC0",asset.score!=null?"Match "+Math.round(asset.score*100)+"%":""].filter(Boolean).join(" · ");
+    const load=document.createElement("button");load.className="library-button";load.textContent="Load model";load.addEventListener("click",()=>loadPolyHavenModel(asset));
+    body.append(title,meta,load);card.append(img,body);root.append(card);
+  }
+}
+async function searchPolyHaven(query,{autoLoad=false}={}){
+  const q=cleanAssetQuery(query||$("#haven-search").value).toLowerCase();
+  if(!q){havenStatus("Enter an object to search for.");return false;}
+  const serial=++polyHavenSearchSerial;$("#haven-search").value=q;havenStatus("Searching Poly Haven…");
+  try{
+    const endpoint="https://api.polyhaven.com/search?q="+encodeURIComponent(q)+"&t=models&limit=8&min=0.25";
+    const response=await fetch(endpoint);
+    if(!response.ok)throw new Error("Poly Haven returned HTTP "+response.status);
+    const data=await response.json();
+    const hits=Array.isArray(data.results)?data.results:[];
+    const assets=await Promise.all(hits.slice(0,8).map(async hit=>{
+      const slug=hit.slug||hit.assetID||hit.id;if(!slug)return null;
+      try{
+        const infoResponse=await fetch("https://api.polyhaven.com/info/"+encodeURIComponent(slug));
+        if(!infoResponse.ok)return null;
+        const info=await infoResponse.json();
+        return {...info,slug,score:hit.score,thumbnail_url:info.thumbnail_url||info.thumbnail||""};
+      }catch{return null;}
+    }));
+    if(serial!==polyHavenSearchSerial)return false;
+    const valid=assets.filter(Boolean);
+    renderPolyHavenResults(valid);
+    if(!valid.length){havenStatus("No usable model metadata returned. Procedural low-poly generation is still available.");return false;}
+    havenStatus("Found "+valid.length+" model(s). Choose one to load it.");
+    if(autoLoad)return await loadPolyHavenModel(valid[0]);
+    return true;
+  }catch(error){
+    if(serial===polyHavenSearchSerial)havenStatus("Poly Haven search failed: "+error.message+" Procedural generation is still available.");
+    return false;
+  }
+}
+async function loadPolyHavenModel(asset){
+  try{
+    havenStatus("Preparing "+(asset.name||asset.slug)+"…");
+    const response=await fetch("https://api.polyhaven.com/files/"+encodeURIComponent(asset.slug));
+    if(!response.ok)throw new Error("file list returned HTTP "+response.status);
+    const files=await response.json(),url=havenAssetUrl(files);
+    if(!url)throw new Error("no directly loadable GLB/glTF file was listed for this model");
+    const gltf=await new Promise((resolve,reject)=>gltfLoader.load(url,resolve,undefined,reject));
+    clearModel();modelRoot=gltf.scene||gltf.scenes?.[0]||new THREE.Group();modelRoot.name=asset.name||asset.slug||"Poly Haven Model";
+    modelRoot.traverse(o=>{if(o.isMesh){o.userData.part=o.userData.part||o.parent?.name||"Model";if(!parts.has(o.userData.part))parts.set(o.userData.part,[]);parts.get(o.userData.part).push(o);}});
+    const bounds=new THREE.Box3().setFromObject(modelRoot),size=bounds.getSize(new THREE.Vector3()),max=Math.max(size.x,size.y,size.z)||1;
+    modelRoot.position.set(0,0,0);modelRoot.scale.setScalar(3.2/max);
+    const normalized=new THREE.Box3().setFromObject(modelRoot),center=normalized.getCenter(new THREE.Vector3());
+    modelRoot.position.x-=center.x;modelRoot.position.y-=normalized.min.y;modelRoot.position.z-=center.z;
+    scene.add(modelRoot);selectedPart=null;activeAssetCredit=(asset.name||asset.slug)+" — Poly Haven (CC0)";
+    $("#model-title").textContent=modelRoot.name;updateSelection();rebuildOverlays();updateStats();buildOutliner();frameModel();
+    window.currentModelType="poly-haven";window.currentModelPrompt=$("#prompt").value;
+    const report=inspectMesh(modelRoot);
+    $("#mesh-status").textContent=report.checksPassed?"Poly Haven asset loaded":"Asset loaded — inspect mesh";
+    $("#export-status").textContent="Loaded from Poly Haven (CC0). External geometry is not auto-repaired; inspect it before export.";
+    havenStatus("Loaded "+modelRoot.name+". Powered by Poly Haven. "+report.meshes+" meshes inspected.");
+    return true;
+  }catch(error){havenStatus("Couldn't load Poly Haven model: "+error.message+" Use the procedural generator as a fallback.");return false;}
+}
+$("#haven-search-button").addEventListener("click",()=>searchPolyHaven($("#haven-search").value));
+$("#haven-search").addEventListener("keydown",e=>{if(e.key==="Enter")searchPolyHaven($("#haven-search").value);});
+
 // Poly Pizza adapter: keeps asset search, loading, and attribution separate from procedural geometry.
 function polyStatus(message){const el=$("#poly-status");if(el)el.textContent=message;}
 function cleanAssetQuery(raw){
