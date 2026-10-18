@@ -8,6 +8,8 @@ const words = (s) => String(s || "").toLowerCase();
 export function classifyPrompt(prompt) {
   const p = words(prompt);
   const rules = [
+    ["frog", /\b(frog|toad|tree frog|bullfrog)\b/],
+    ["shoe", /\b(shoe|sneaker|boot|trainer|footwear|low[- ]top)\b/],
     ["fan", /\b(tabletop|desk|electric|standing)?\s*fan\b/],
     ["chair", /\b(chair|armchair|dining chair|office chair)\b/],
     ["table", /\b(table|desk|workbench|coffee table)\b/],
@@ -37,7 +39,7 @@ function readCount(p, nouns, fallback, min=1, max=16) {
 }
 export function buildPromptModel(THREE, prompt, detail=1) {
   const p=words(prompt), type=classifyPrompt(p), segments=[6,10,14][clamp(Number(detail)||0,0,2)];
-  const group=new THREE.Group(); group.name=({fan:"Tabletop Fan",chair:"Chair",table:"Table",stool:"Stool",mug:"Mug",bottle:"Bottle",vase:"Low-poly Vase",house:"Small House",tree:"Low-poly Tree",lamp:"Desk Lamp",robot:"Robot",car:"Compact Car",sofa:"Sofa",speaker:"Speaker",crate:"Crate",mushroom:"Mushroom",rock:"Low-poly Rock",gear:"Gear",block:"Primitive Blockout"})[type];
+  const group=new THREE.Group(); group.name=({fan:"Tabletop Fan",chair:"Chair",table:"Table",stool:"Stool",mug:"Mug",bottle:"Bottle",vase:"Low-poly Vase",house:"Small House",tree:"Low-poly Tree",lamp:"Desk Lamp",robot:"Robot",car:"Compact Car",sofa:"Sofa",speaker:"Speaker",crate:"Crate",mushroom:"Mushroom",rock:"Low-poly Rock",gear:"Gear",frog:"Low-poly Frog",shoe:"Low-poly Shoe",block:"Primitive Blockout"})[type];
   const partMap=new Map(); let serial=0;
   const material=()=>new THREE.MeshStandardMaterial({color:0xbfc9d4,roughness:.82,metalness:0,flatShading:true});
   function add(geo,name,part,pos=[0,0,0],rot=[0,0,0]) {
@@ -110,6 +112,33 @@ export function buildPromptModel(THREE, prompt, detail=1) {
     add(cyl(.16,.2,.5,8),"Stem","Stem",[0,.25,0]);add(new THREE.SphereGeometry(.58,segments,5,0,Math.PI*2,0,Math.PI/2),"Cap","Cap",[0,.54,0]);
   } else if(type==="rock") {
     const g=new THREE.IcosahedronGeometry(.65,1);const a=g.getAttribute("position");for(let i=0;i<a.count;i++){const k=0.78+((i*17)%11)/30;a.setXYZ(i,a.getX(i)*k,a.getY(i)*k*.8,a.getZ(i)*k);}g.computeVertexNormals();add(g,"Rock","Rock",[0,.48,0]);
+  } else if(type==="frog") {
+    // A readable frog silhouette with raised eyes, bent legs and toes.
+    const body=add(new THREE.IcosahedronGeometry(.55,1),"Body","Body",[0,.55,0]);body.scale.set(1.05,.78,1.12);
+    const head=add(new THREE.IcosahedronGeometry(.39,1),"Head","Head",[0,.78,.43]);head.scale.set(1.12,.88,.9);
+    for(const s of [-1,1]){
+      add(rod(.055,.18,6),"Eye stalk","Eyes",[s*.23,1.04,.48]);
+      const eye=add(new THREE.IcosahedronGeometry(.145,1),"Eye","Eyes",[s*.25,1.15,.52]);eye.scale.set(.9,1.05,.8);
+      add(new THREE.IcosahedronGeometry(.055,0),"Pupil","Eyes",[s*.25,1.16,.645]);
+      const haunch=add(new THREE.IcosahedronGeometry(.25,0),"Hind leg","Legs",[s*.48,.32,-.2]);haunch.scale.set(1,.8,1.25);
+      const shin=add(box(.16,.13,.38),"Lower hind leg","Legs",[s*.48,.12,.05]);shin.rotation.x=-.15;
+      add(box(.25,.08,.17),"Foot","Feet",[s*.48,.075,.23]);
+      for(let t=-1;t<=1;t++)add(new THREE.IcosahedronGeometry(.045,0),"Toe","Feet",[s*.48+t*.075,.06,.31]);
+      const front=add(box(.12,.12,.34),"Front leg","Legs",[s*.3,.27,.42]);front.rotation.x=-.18;
+      add(new THREE.IcosahedronGeometry(.12,0),"Front foot","Feet",[s*.3,.12,.56]);
+    }
+    const mouth=add(new THREE.TorusGeometry(.19,.018,4,12,Math.PI),"Mouth","Face",[0,.66,.765]);mouth.rotation.z=Math.PI;
+  } else if(type==="shoe") {
+    // Toe points toward +Z; named components remain selectable in the outliner.
+    add(box(.72,.13,1.42),"Rubber sole","Sole",[0,.12,.02]);
+    add(box(.7,.09,1.34),"Midsole","Sole",[0,.205,.02]);
+    const upper=add(new THREE.IcosahedronGeometry(.43,1),"Upper","Upper",[0,.39,-.02]);upper.scale.set(.82,.66,1.18);
+    const toe=add(new THREE.IcosahedronGeometry(.32,1),"Toe cap","Toe",[0,.34,.43]);toe.scale.set(1,.72,1.05);
+    add(box(.28,.23,.25),"Tongue","Tongue",[0,.56,.08]);
+    add(box(.42,.045,.48),"Opening","Opening",[0,.59,-.13]);
+    for(let i=0;i<4;i++){const z=.13-i*.12;const lace=add(box(.32,.025,.035),"Lace "+(i+1),"Laces",[0,.61,z]);lace.rotation.y=(i%2?-.12:.12);}
+    for(const s of [-1,1])add(box(.045,.07,.58),"Side trim","Trim",[s*.285,.39,-.05]);
+    add(box(.38,.045,.12),"Heel tab","Heel",[0,.53,-.55]);
   } else if(type==="gear") {
     add(cyl(.62,.62,.16,12),"Gear body","Body",[0,.62,0]);add(cyl(.18,.18,.22,12),"Axle hole placeholder","Axle",[0,.62,0]);
     for(let i=0;i<8;i++){const a=i*Math.PI/4;add(box(.18,.16,.16),"Tooth","Teeth",[Math.cos(a)*.65,.62,Math.sin(a)*.65]);}
