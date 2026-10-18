@@ -1,5 +1,19 @@
 const API_BASE = "https://openapi.tripo3d.ai/v3";
 const MAX_PROMPT_LENGTH = 900;
+// Best-effort per-isolate throttle; add a Cloudflare WAF rate-limit rule for production.
+const generationBuckets = new Map();
+function rateLimited(request) {
+  const key = request.headers.get("CF-Connecting-IP") || "unknown-client";
+  const now = Date.now();
+  const bucket = (generationBuckets.get(key) || []).filter(time => now - time < 60_000);
+  if (bucket.length >= 3) { generationBuckets.set(key, bucket); return true; }
+  bucket.push(now);
+  generationBuckets.set(key, bucket);
+  if (generationBuckets.size > 2000) {
+    for (const [client, times] of generationBuckets) if (!times.some(time => now - time < 60_000)) generationBuckets.delete(client);
+  }
+  return false;
+}
 const ALLOWED_ORIGIN = (env) => env.ALLOWED_ORIGIN || "https://wonka15.github.io";
 
 function corsHeaders(origin, env) {
@@ -50,7 +64,8 @@ export default {
       if (!prompt) return json({ error: "Describe the object you want to build." }, 400, origin, env);
       if (prompt.length > MAX_PROMPT_LENGTH) return json({ error: "Prompt is too long. Keep it under 900 characters." }, 413, origin, env);
 
-      const upstream = await fetch(API_BASE + "/generation/text-to-model", {
+      if (rateLimited(request)) return json({ error: "Generation rate limit reached. Wait one minute before starting another model." }, 429, origin, env);
+      const upstream = await fetch(API_BASE + "/generation/text-to-model",
         method: "POST",
         headers: { "Authorization": "Bearer " + env.TRIPO_API_KEY, "Content-Type": "application/json" },
         body: JSON.stringify({
