@@ -56,7 +56,16 @@ export function buildPromptModel(THREE, prompt, detail=1) {
   const box=(w,h,d)=>new THREE.BoxGeometry(w,h,d);
   const cyl=(rt,rb,h,n=segments)=>new THREE.CylinderGeometry(rt,rb,h,n,1,false);
   const sphere=(r,n=segments)=>new THREE.IcosahedronGeometry(r,0);
-  const cone=(r,h,n=segments)=>new THREE.ConeGeometry(r,h,n,1);
+  // A shared-apex indexed cone avoids the zero-area apex triangles produced by
+  // some procedural cone generators, which keeps the built-in tree mesh clean.
+  const cone=(r,h,n=segments)=>{
+    const positions=[0,h/2,0];
+    for(let i=0;i<n;i++){const a=i*Math.PI*2/n;positions.push(Math.cos(a)*r,-h/2,Math.sin(a)*r);}
+    const centerIndex=positions.length/3;positions.push(0,-h/2,0);
+    const indices=[];
+    for(let i=0;i<n;i++){const next=(i+1)%n;indices.push(0,1+next,1+i);indices.push(centerIndex,1+i,1+next);}
+    const geometry=new THREE.BufferGeometry();geometry.setAttribute("position",new THREE.Float32BufferAttribute(positions,3));geometry.setIndex(indices);geometry.computeVertexNormals();return geometry;
+  };
   const rod=(r,len,n=6)=>cyl(r,r,len,n);
   const wider=/\b(wider|broader|wide|widen)\b/.test(p)?1.3:1;
   const taller=/\b(taller|higher|elongated|longer)\b/.test(p)?1.25:/\b(shorter|lower)\b/.test(p)?.78:1;
