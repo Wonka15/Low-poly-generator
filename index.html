@@ -22,9 +22,8 @@
     <div class="panel-heading"><div><span class="eyebrow">01 / PROMPT</span><h2>Describe it.</h2></div><span class="step-icon">✳</span></div>
     <p class="muted-copy">Speak naturally. Start with a simple object, then refine one detail at a time.</p>
     <div class="prompt-box">
-      <div class="prompt-prefix" aria-label="Permanent starter sentence">Please build me a low-poly</div>
-      <label for="prompt" class="object-label">ADD YOUR OBJECT</label>
-      <textarea id="prompt" rows="2" placeholder="type anything… (e.g. a frog, a car, a flower in a vase)" aria-describedby="prompt-prefix"></textarea>
+      <div id="prompt-prefix" class="prompt-prefix" aria-label="Permanent starter sentence">Please build me a low-poly</div>
+      <textarea id="prompt" rows="2" aria-label="Object to build" placeholder="type anything… (e.g. a frog, a car, a flower in a vase)" aria-describedby="prompt-prefix"></textarea>
       <div class="prompt-actions"><span id="mic-status" class="mic-status">Ready when you are</span><button id="mic-button" class="mic-button" aria-label="Start microphone input" title="Use microphone"><span class="mic-symbol">🎙</span><span id="mic-label">Speak</span></button></div>
     </div>
     <button id="build-button" class="button-primary"><span>✦</span> Build 3D model <span class="button-arrow">↗</span></button>
