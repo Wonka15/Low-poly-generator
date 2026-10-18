@@ -30,6 +30,16 @@
     <div class="suggestions"><span class="mini-label">OBJECT LIBRARY · TAP TO BUILD</span><button class="suggestion" data-prompt="a lollipop">🍭 Lollipop</button><button class="suggestion" data-prompt="a compact car">🚗 Car</button><button class="suggestion" data-prompt="an F1 race car">🏎️ F1 race car</button><button class="suggestion" data-prompt="a game controller">🎮 Game controller</button><button class="suggestion" data-prompt="a flower">🌸 Flower</button><button class="suggestion" data-prompt="a flower in a vase">💐 Flower in a vase</button><button class="suggestion" data-prompt="a small house">🏠 House</button><button class="suggestion" data-prompt="a Japanese maple tree">🍁 Japanese maple tree</button><button class="suggestion" data-prompt="a low-poly frog">🐸 Frog</button><button class="suggestion" data-prompt="a sneaker with laces">👟 Sneaker</button><button class="suggestion" data-prompt="a tabletop fan with three blades">🌀 Tabletop fan</button></div>
 
     <div class="panel-divider"></div>
+    <section class="poly-library" aria-labelledby="haven-library-title">
+      <div class="panel-heading compact"><div><span class="eyebrow">NO API KEY NEEDED</span><h3 id="haven-library-title">Poly Haven Library</h3></div><span class="library-badge">CC0</span></div>
+      <p class="muted-copy small">Search downloadable 3D assets. This library uses Poly Haven's public API; results may be more realistic or detailed than the procedural low-poly models.</p>
+      <label for="haven-search" class="mini-label">SEARCH POLY HAVEN MODELS</label>
+      <div class="library-search-row"><input id="haven-search" class="library-input" type="search" placeholder="e.g. ceramic vase, tree, car" /><button id="haven-search-button" class="library-button" aria-label="Search Poly Haven">Search</button></div>
+      <p id="haven-status" class="library-status" role="status" aria-live="polite">Ready — no API key required.</p>
+      <div id="haven-results" class="poly-results" aria-live="polite"></div>
+      <p class="library-disclaimer">Powered by Poly Haven. Assets are CC0; use the procedural generator for intentionally low-poly geometry. External assets are loaded unchanged.</p>
+    </section>
+    <div class="panel-divider"></div>
     <section class="poly-library" aria-labelledby="poly-library-title">
       <div class="panel-heading compact"><div><span class="eyebrow">ASSET PROVIDER</span><h3 id="poly-library-title">Poly Pizza Library</h3></div><span class="library-badge">GLB</span></div>
       <p class="muted-copy small">Search real low-poly models and load them into the viewport. Get a free API key from Poly Pizza to enable live search.</p>
