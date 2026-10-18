@@ -198,17 +198,25 @@ export function buildPromptModel(THREE, prompt, detail=1) {
     for(const s of [-1,1]){add(rod(.075,.52,6),"Arm","Arms",[s*.4,.76,0],[0,0,s*.12]);add(box(.15,.48,.16),"Leg","Legs",[s*.18,.18,0]);add(box(.16,.12,.24),"Foot","Feet",[s*.18,.04,.06]);}
     for(const x of [-.11,.11])add(sphere(.045,8),"Eye","Face",[x,1.3,.19]);
   } else if(type==="f1_car") {
-    add(box(1.8,.18,.68),"Low chassis","Body",[0,.3,0]);
-    add(box(.48,.18,.42),"Cockpit","Cockpit",[0,.48,-.03]);
-    add(new THREE.IcosahedronGeometry(.17,1),"Driver helmet","Cockpit",[0,.62,.02]);
-    add(box(.32,.06,1.08),"Front wing","Wings",[0,.2,.62]);
-    add(box(.34,.07,.98),"Rear wing","Wings",[0,.45,-.72]);
-    add(box(.2,.12,.65),"Engine cover","Body",[0,.46,-.35]);
-    for(const x of [-.63,.63])for(const z of [-.48,.48]){
-      add(new THREE.CylinderGeometry(.2,.2,.16,10),"Racing tire","Wheels",[x,.2,z],[0,0,Math.PI/2]);
-      add(new THREE.CylinderGeometry(.105,.105,.17,10),"Wheel hub","Wheels",[x,.2,z],[0,0,Math.PI/2]);
+    // Low Formula-style chassis, tapered nose, exposed tyres and wing planes.
+    add(box(.62,.16,1.42),"Carbon monocoque","Body",[0,.30,-.02]);
+    add(box(.40,.12,.62),"Rear engine cover","Body",[0,.42,-.36]);
+    add(box(.24,.10,.42),"Nose spine","Nose",[0,.36,.50]);
+    add(new THREE.ConeGeometry(.20,.68,8,1,false),"Tapered nose","Nose",[0,.32,.79],[Math.PI/2,0,0]);
+    add(box(1.36,.055,.24),"Front wing main plane","Front wing",[0,.20,.82]);
+    for(const s of [-1,1]) {
+      add(box(.045,.16,.20),"Front wing endplate","Front wing",[s*.64,.24,.82]);
+      add(box(.25,.13,.70),"Side pod","Body",[s*.36,.31,-.02]);
     }
-    add(box(.12,.1,.34),"Front nose","Body",[0,.25,.43]);
+    add(box(.34,.12,.40),"Cockpit surround","Cockpit",[0,.43,.10]);
+    add(new THREE.TorusGeometry(.145,.035,5,10),"Cockpit rim","Cockpit",[0,.50,.10],[Math.PI/2,0,0]);
+    add(new THREE.IcosahedronGeometry(.105,0),"Driver helmet","Cockpit",[0,.55,.06]);
+    add(box(1.08,.055,.22),"Rear wing plane","Rear wing",[0,.52,-.79]);
+    for(const s of [-1,1]) add(box(.045,.22,.18),"Rear wing endplate","Rear wing",[s*.49,.56,-.79]);
+    for(const x of [-.69,.69]) for(const z of [-.48,.48]) {
+      add(new THREE.CylinderGeometry(.235,.235,.18,10,1,false),"Wide racing tyre","Wheels",[x,.24,z],[0,0,Math.PI/2]);
+      add(new THREE.CylinderGeometry(.125,.125,.19,10,1,false),"Wheel hub","Wheels",[x,.24,z],[0,0,Math.PI/2]);
+    }
   } else if(type==="car") {
     add(box(1.65,.42,.82),"Chassis","Body",[0,.38,0]);add(box(.9,.38,.7),"Cabin","Cabin",[0,.76,-.03]);
     for(const x of [-.56,.56])for(const z of [-.44,.44])add(new THREE.CylinderGeometry(.2,.2,.12,10),"Wheel","Wheels",[x,.22,z],[0,0,Math.PI/2]); // Axles run left-to-right, matching the wheel positions.
