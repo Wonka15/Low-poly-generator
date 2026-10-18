@@ -435,9 +435,10 @@ async function generateWithAI(raw) {
 
 async function parsePrompt(raw){
 const requested=cleanAssetQuery(raw);
-if(polyPizzaKey && requested && !/\b(wider|broader|widen|tilt|angle|lean|blades?|reset|default|start over|move|shift|slide|smaller|shrink|bigger|larger|enlarge|taller|higher|deeper|thicker)\b/i.test(raw)){const loaded=await searchPolyPizza(requested,{autoLoad:true});if(loaded)return;}const p=raw.toLowerCase();let changed=false;
 if(applySelectedPrompt(raw)){return;}
-if(await generateWithAI(raw)) return;
+const isRefinement=/\b(wider|broader|widen|tilt|angle|lean|blades?|reset|default|start over|move|shift|slide|smaller|shrink|bigger|larger|enlarge|taller|higher|deeper|thicker)\b/i.test(raw);
+if(!isRefinement && await generateWithAI(raw)) return;
+if(polyPizzaKey && requested && !isRefinement){const loaded=await searchPolyPizza(requested,{autoLoad:true});if(loaded)return;}const p=raw.toLowerCase();let changed=false;
 const requestedType=classifyPrompt(raw);
 if(requestedType!=="fan" && (requestedType!=="block" || /\b(build|make|create|generate|model)\b/.test(p))){buildGeneric(raw);return;}
 if(requestedType==="fan" && /\b(build|make|create|generate)\b/.test(p) && !/\b(wider|broader|widen|tilt|angle|lean|blades?|reset|default|start over)\b/.test(p)){window.fanBaseWide=false;window.fanTilt=0;window.fanBladeCount=3;$("#model-title").textContent="Tabletop Fan";buildFan();$("#export-status").textContent="Generated the tabletop fan sample. Select a part to refine it.";return;}
@@ -455,10 +456,10 @@ document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",(
 
   if (window.currentModelType === "fan") {
     buildFan();
-  } else if (window.currentModelType === "poly-pizza") {
-    // Procedural detail changes cannot regenerate a downloaded asset; preserve it.
+  } else if (window.currentModelType === "poly-pizza" || window.currentModelType === "ai-generated") {
+    // Detail slider controls procedural builders only; preserve downloaded/AI geometry.
     $("#export-status").textContent =
-      "Mesh detail applies to procedural models. The loaded Poly Pizza asset was kept unchanged.";
+      "Mesh detail applies to procedural models. The loaded external/AI mesh was kept unchanged.";
   } else {
     buildGeneric(window.currentModelPrompt || $("#prompt").value);
   }
@@ -466,9 +467,9 @@ document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",(
 document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll("[data-view]").forEach(x=>{const active=x===b;x.classList.toggle("active",active);x.setAttribute("aria-pressed",String(active));});const requested=b.dataset.view;if(requested==="orthographic"||requested==="perspective"){setCameraMode(requested);return;}const c=controls.target.clone(),d=camera.position.distanceTo(c);if(requested==="front")camera.position.set(c.x,c.y,c.z+d);else if(requested==="side")camera.position.set(c.x+d,c.y,c.z);controls.update();}));
 function cleanupMesh(){
   // This repair pass rebuilds geometry from positions only. Preserve imported GLTF UVs and vertex attributes.
-  if(window.currentModelType==="poly-pizza"){
+  if(window.currentModelType==="poly-pizza" || window.currentModelType==="ai-generated"){
     $("#mesh-status").textContent="Imported asset kept unchanged";
-    $("#export-status").textContent="Mesh cleanup is limited to procedural models because this repair pass does not preserve every GLTF vertex attribute.";
+    $("#export-status").textContent="Mesh cleanup is limited to procedural models because this repair pass does not preserve every GLTF vertex attribute. Keep this AI mesh unchanged here and perform retopology/cleanup in Blender or Maya.";
     return;
   }
   let merged=0,removed=0,processed=0;for(const m of meshes()){const source=m.geometry;const p=source.getAttribute("position");if(!p)continue;const idx=source.index,count=idx?idx.count:p.count,triangles=[];for(let i=0;i+2<count;i+=3){const ids=[idx?idx.getX(i):i,idx?idx.getX(i+1):i+1,idx?idx.getX(i+2):i+2],a=new THREE.Vector3().fromBufferAttribute(p,ids[0]),b=new THREE.Vector3().fromBufferAttribute(p,ids[1]),c=new THREE.Vector3().fromBufferAttribute(p,ids[2]);if(![a.x,a.y,a.z,b.x,b.y,b.z,c.x,c.y,c.z].every(Number.isFinite)){removed++;continue;}if(new THREE.Vector3().subVectors(b,a).cross(new THREE.Vector3().subVectors(c,a)).lengthSq()<1e-16){removed++;continue;}triangles.push(...a.toArray(),...b.toArray(),...c.toArray());}const raw=new THREE.BufferGeometry();raw.setAttribute("position",new THREE.Float32BufferAttribute(triangles,3));const clean=mergeVertices(raw,1e-5);raw.dispose();clean.computeVertexNormals();merged+=Math.max(0,triangles.length/3-clean.getAttribute("position").count);m.geometry = clean;
